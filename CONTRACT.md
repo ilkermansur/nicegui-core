@@ -38,7 +38,7 @@ Bozuk `plugin.toml`, hata veren `setup` ya da eksik `requires` yalnızca o plugi
 | `ctx.bus` | Olay yolu (bkz. 4) |
 | `ctx.services` | Servis kaydı (bkz. 4) |
 | `ctx.t(key, **vars)` | Çeviri (bkz. 5) |
-| `ctx.kernel` | Yalnızca sistem plugin'leri (`store`) içindir; özellik plugin'leri kullanmaz. Alanları: `manager` (`ngui.manager.Manager`), `restart()` ve `result` (`LoadResult`) |
+| `ctx.kernel` | Yalnızca sistem plugin'leri (`store`) içindir; özellik plugin'leri kullanmaz. Alanları: `home` (`ngui.config.Home`), `manager` (`ngui.manager.Manager`), `restart()` ve `result` (`LoadResult`). İstisna: depolama plugin'leri veri klasörü için `ctx.kernel.home.data_dir` okuyabilir. `store` ayrıca `ngui.loader.read_manifests` ve `ngui.roles.ROLE_ORDER` kullanır |
 | `ctx.i18n` | Çeviri nesnesi; `ctx.i18n.set_lang("en")` dili değiştirir (genelde yalnızca layout kullanır) |
 
 Yükleme sırası: `storage`, `auth`, `theme`, `layout`, sonra özellik plugin'leri. Sayfaları her zaman `layout.page` ile kaydedin.
@@ -76,6 +76,7 @@ def setup(ctx):
 **Depolama kuralları:**
 - Varsayılan kapsam `(plugin, o anki kullanıcı)`; kullanıcı her çağrıda `auth.current_user()` ile sorulur, `setup` sırasında sabitlenmez.
 - İstek bağlamı dışında (zamanlayıcı, bus dinleyicisi, `setup`) `ctx.storage` hata verir; orada `.shared` ya da `.for_user(id)` kullanın.
+- `run.io_bound` iş parçacıklarında da varsayılan kapsam hata verir; orada da `.for_user(id)` ya da `.shared` kullanın.
 - Plugin kaldırılınca verisi silinmez, yeniden kurulunca geri gelir; yalnızca açık bir `purge` siler.
 - Plugin'ler arası ortak alan yoktur; paylaşım bus ile yapılır.
 - Kullanıcı ve yetki varsayımı yapmayın: kullanıcıyı `auth.current_user()`, yetkiyi `auth.has()` ile sorun.
