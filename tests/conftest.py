@@ -58,3 +58,14 @@ def kernel(home, install_fixtures):
     install_fixtures(*CORE_ROLES.values(), "hello", "boom", "needs-missing")
     cfg = Config(enabled=[], roles=dict(CORE_ROLES))
     return Kernel(home, cfg, Bus(), Services(), I18n("tr"))
+
+
+def commit_change(url: str, relpath: str = "CHANGES", append: str = "x\n") -> str:
+    path = Path(url) / relpath
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a") as f:
+        f.write(append)
+    for cmd in (["add", "-A"], ["commit", "-m", "change"]):
+        subprocess.run(["git", *cmd], cwd=url, check=True, capture_output=True)
+    return subprocess.run(["git", "rev-parse", "HEAD"], cwd=url, check=True,
+                          capture_output=True, text=True).stdout.strip()
