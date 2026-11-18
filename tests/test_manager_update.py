@@ -92,3 +92,13 @@ def test_rollback_without_repo_dir(mgr, hello_url):
 def test_core_plugin_id_is_refused(mgr_with_core, op):
     with pytest.raises(ManagerError) as e: getattr(mgr_with_core, op)("layout-fake")
     assert e.value.key == "err.is_core"
+
+
+def test_fetch_json_token_not_sent_on_redirect(monkeypatch):
+    import io
+    from ngui.manager import fetch_json
+    seen = []
+    monkeypatch.setenv("GITHUB_TOKEN", "t0k")
+    monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout: seen.append(req) or io.BytesIO(b"[]"))
+    assert fetch_json("https://api.github.com/x") == []
+    assert seen[0].unredirected_hdrs["Authorization"] == "Bearer t0k" and "Authorization" not in seen[0].headers

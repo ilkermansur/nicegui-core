@@ -37,3 +37,11 @@ def test_token_goes_through_env_only(monkeypatch):
     env = _env()
     assert env["GIT_CONFIG_KEY_0"] == "http.https://github.com/.extraheader"
     assert "t0k" not in env["GIT_CONFIG_VALUE_0"]
+
+
+def test_option_like_url_is_not_an_option(make_repo, tmp_path, monkeypatch):
+    clone(make_repo(FIXTURES / "plugins" / "hello", "r"), tmp_path / "w")
+    monkeypatch.chdir(tmp_path / "w")  # without "--", "--quiet" would list this clone's origin
+    assert not exists("--quiet")
+    with pytest.raises(GitError):
+        clone("--quiet", tmp_path / "w2")

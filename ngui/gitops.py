@@ -37,7 +37,7 @@ def head(dest: Path) -> str:
 
 def clone(url: str, dest: Path) -> str:
     try:
-        git("clone", url, str(dest))
+        git("clone", "--", url, str(dest))
         return head(dest)
     except GitError:
         shutil.rmtree(dest, ignore_errors=True)
@@ -56,5 +56,5 @@ def checkout(dest: Path, commit: str) -> None:
 
 
 def exists(url: str) -> bool:
-    r = subprocess.run(["git", "ls-remote", "--exit-code", url], capture_output=True, env=_env())
+    r = subprocess.run(["git", "ls-remote", "--exit-code", "--", url], capture_output=True, env=_env())
     return r.returncode == 0

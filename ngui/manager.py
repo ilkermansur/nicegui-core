@@ -41,7 +41,7 @@ class CatalogEntry:
 def fetch_json(url: str) -> Any:
     req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
     if token := os.environ.get("GITHUB_TOKEN"):
-        req.add_header("Authorization", f"Bearer {token}")
+        req.add_unredirected_header("Authorization", f"Bearer {token}")  # not sent on redirects
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.load(resp)
 
