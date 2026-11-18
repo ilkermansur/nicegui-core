@@ -1,0 +1,11 @@
+# Yeni servis eklemek için: services altına, app ile aynı girintide yeni bir blok ekle.
+services:
+  app:
+    build: .
+    env_file: .env
+    ports: ["127.0.0.1:8080:8080"]
+    volumes: ["ngui-data:/data"]
+    restart: unless-stopped
+
+volumes:
+  ngui-data: {}
