@@ -69,3 +69,34 @@ def commit_change(url: str, relpath: str = "CHANGES", append: str = "x\n") -> st
         subprocess.run(["git", *cmd], cwd=url, check=True, capture_output=True)
     return subprocess.run(["git", "rev-parse", "HEAD"], cwd=url, check=True,
                           capture_output=True, text=True).stdout.strip()
+
+
+def fake_roles(home: Home) -> None:
+    cfg = home.load_config()
+    cfg.roles, cfg.enabled = dict(CORE_ROLES), list(CORE_ROLES.values())
+    home.save_config(cfg)
+
+
+@pytest.fixture
+def mgr(home):
+    from ngui.manager import Manager
+
+    return Manager(home)
+
+
+@pytest.fixture
+def core_url(make_repo):
+    return make_repo(FIXTURES / "core-plugins", "core-plugins")
+
+
+@pytest.fixture
+def hello_url(make_repo):
+    return make_repo(FIXTURES / "plugins" / "hello", "nicegui-plugin-hello")
+
+
+@pytest.fixture
+def mgr_with_core(mgr, core_url, monkeypatch):
+    monkeypatch.setenv("NGUI_CORE_REPO", core_url)
+    mgr.bootstrap()
+    fake_roles(mgr.home)
+    return mgr
