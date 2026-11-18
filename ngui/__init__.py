@@ -9,5 +9,5 @@ class NguiError(Exception):
     """An error the CLI prints as the core locale text `key`, formatted with `vars`."""
 
     def __init__(self, key: str, **vars):
-        super().__init__(key)
+        super().__init__(vars.get("detail", key))
         self.key, self.vars = key, vars

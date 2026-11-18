@@ -16,9 +16,7 @@ from ngui.loader import discover, plan, read_manifests
 from ngui.manifest import ManifestError, core_compatible, load_manifest
 
 log = logging.getLogger("ngui.manager")
-
-
-ManagerError = NguiError
+ManagerError = NguiError  # the name callers and tests use
 
 
 @dataclass
@@ -104,25 +102,24 @@ class Manager:
         if pid not in discover(self.home, cfg):
             raise ManagerError("err.not_installed", id=pid)
 
-    def _repo(self, pid: str) -> tuple[str, Path]:
-        """Lock key and clone dir of an installed repo; `core` is the core-plugins repo."""
+    def _repo(self, pid: str) -> tuple[str, Path, dict[str, LockEntry]]:
+        """Lock key, clone dir and lock of an installed repo; `core` is the core-plugins repo."""
         if (self.home.repos_dir / CORE_KEY / pid).is_dir():
             raise ManagerError("err.is_core", id=pid)
-        key = CORE_KEY if pid == "core" else pid
-        if not (self.home.repos_dir / key).is_dir():
+        key, lock = CORE_KEY if pid == "core" else pid, self.home.load_lock()
+        if key not in lock or not (self.home.repos_dir / key).is_dir():
             raise ManagerError("err.not_installed", id=pid)
-        return key, self.home.repos_dir / key
+        return key, self.home.repos_dir / key, lock
 
     def remove(self, pid: str) -> None:
         cfg = self.home.load_config()
         if pid == "core":
             raise ManagerError("err.is_core", id=pid)
-        _, dest = self._repo(pid)
+        _, dest, lock = self._repo(pid)
         if pid in cfg.roles.values():
             raise ManagerError("err.fills_role", id=pid)
         shutil.rmtree(dest)
-        lock = self.home.load_lock()
-        lock.pop(pid, None)
+        lock.pop(pid)
         self.home.save_lock(lock)
         cfg.enabled = [p for p in cfg.enabled if p != pid]
         cfg.links.pop(pid, None)
@@ -180,10 +177,7 @@ class Manager:
         return rows
 
     def update(self, pid: str) -> str:
-        key, dest = self._repo(pid)
-        lock = self.home.load_lock()
-        if key not in lock:
-            raise ManagerError("err.not_installed", id=pid)
+        key, dest, lock = self._repo(pid)
         old = lock[key].commit
         try:
             if (new := gitops.pull(dest)) == old:
@@ -192,20 +186,15 @@ class Manager:
                 m = load_manifest(toml.parent) if toml.is_file() else None
                 if m and not core_compatible(m.core):
                     raise ManagerError("err.needs_self_update", plugin=m.id, spec=m.core)
-        except Exception as e:
+        except Exception:
             gitops.checkout(dest, old)
-            if isinstance(e, ManifestError):
-                raise ManagerError("err.manifest", detail=str(e)) from e
             raise
         lock[key] = LockEntry(lock[key].url, new, previous=old)
         self.home.save_lock(lock)
         return new
 
     def rollback(self, pid: str) -> str:
-        key, dest = self._repo(pid)
-        lock = self.home.load_lock()
-        if key not in lock:
-            raise ManagerError("err.not_installed", id=pid)
+        key, dest, lock = self._repo(pid)
         entry = lock[key]
         if not entry.previous:
             raise ManagerError("err.no_previous")

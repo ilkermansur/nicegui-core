@@ -5,15 +5,16 @@ from pathlib import Path
 
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 
-from ngui import CONTRACT_VERSION
+from ngui import CONTRACT_VERSION, NguiError
 from ngui.roles import ROLE_ORDER
 
 ID_PATTERN = re.compile(r"[a-z][a-z0-9-]*")
 RESERVED_IDS = {"core", "core-plugins"}
 
 
-class ManifestError(Exception):
-    pass
+class ManifestError(NguiError):
+    def __init__(self, detail: str):
+        super().__init__("err.manifest", detail=detail)
 
 
 @dataclass

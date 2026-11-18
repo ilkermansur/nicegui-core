@@ -31,8 +31,7 @@ def discover(home: Home, cfg: Config) -> dict[str, Path]:
 
 def read_manifests(home: Home, cfg: Config) -> tuple[dict[str, Manifest], dict[str, str]]:
     """Discovered, readable and core-compatible manifests, plus a reason for each bad one."""
-    manifests: dict[str, Manifest] = {}
-    bad: dict[str, str] = {}
+    manifests, bad = {}, {}
     for pid, path in discover(home, cfg).items():
         try:
             m = load_manifest(path, expected_id=pid)

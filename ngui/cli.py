@@ -8,7 +8,6 @@ from ngui.app import run, signal_app
 from ngui.config import home_from_env
 from ngui.i18n import I18n
 from ngui.manager import Manager, ManagerError
-from ngui.manifest import ManifestError
 from ngui.scaffold import new_plugin
 
 # mutating command -> positional args
@@ -31,10 +30,6 @@ def _parser() -> argparse.ArgumentParser:
     new.add_argument("name")
     new.add_argument("--dir", default=None)
     return p
-
-
-def _apply(mgr: Manager, a: argparse.Namespace):
-    return getattr(mgr, a.cmd)(*(getattr(a, x) for x in COMMANDS[a.cmd]))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -63,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
         if a.cmd == "self-update":
             print(t("cli.self_updated", commit=mgr.self_update(KERNEL_DIR)[:7]))
         else:
-            _apply(mgr, a)
+            getattr(mgr, a.cmd)(*(getattr(a, x) for x in COMMANDS[a.cmd]))
             mgr.sync_deps()  # no-op unless the enabled set's dependencies changed
             print(t("cli.done", cmd=a.cmd))
     except ManagerError as e:
@@ -71,9 +66,6 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     except FileExistsError as e:
         print(t("err.exists", path=e.args[0]), file=sys.stderr)
-        return 1
-    except ManifestError as e:
-        print(t("err.manifest", detail=str(e)), file=sys.stderr)
         return 1
     if not signal_app(home):
         print(t("cli.not_running"))

@@ -102,3 +102,10 @@ def test_fetch_json_token_not_sent_on_redirect(monkeypatch):
     monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout: seen.append(req) or io.BytesIO(b"[]"))
     assert fetch_json("https://api.github.com/x") == []
     assert seen[0].unredirected_hdrs["Authorization"] == "Bearer t0k" and "Authorization" not in seen[0].headers
+
+
+def test_update_to_broken_manifest_restores_lock_commit(mgr, hello_url):
+    mgr.add(hello_url); first = mgr.home.load_lock()["hello"].commit
+    commit_change(hello_url, "plugin.toml", append="id = = broken\n")
+    with pytest.raises(ManagerError) as e: mgr.update("hello")
+    assert e.value.key == "err.manifest" and head(mgr.home.repos_dir / "hello") == first

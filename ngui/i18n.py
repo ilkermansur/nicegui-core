@@ -39,12 +39,10 @@ class I18n:
             if key in langs.get(code, {}):
                 text = langs[code][key]
                 break
-        if vars:
-            try:
-                return text.format(**vars)
-            except (KeyError, IndexError, ValueError):
-                return text
-        return text
+        try:
+            return text.format(**vars) if vars else text
+        except (KeyError, IndexError, ValueError):
+            return text
 
     def set_lang(self, lang: str) -> None:
         if self.lang_setter:

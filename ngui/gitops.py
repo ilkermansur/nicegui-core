@@ -11,7 +11,6 @@ from ngui import NguiError
 class GitError(NguiError):
     def __init__(self, detail: str):
         super().__init__("err.git", detail=detail)
-        self.args = (detail,)
 
 
 def _env() -> dict[str, str]:
