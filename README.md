@@ -48,3 +48,13 @@ Yedek dosyası oturum anahtarını içerir: paylaşma.
 3. Değişiklik sonrası uygulama yeniden başlar; hata olursa kurtarma sayfasından bak.
 
 Plugin sözleşmesi (manifest, roller, bus): [CONTRACT.md](CONTRACT.md)
+
+## Yapay zeka ile plugin geliştirmek
+
+`skills/ngui-plugin/` klasörü, bir yapay zeka asistanına ngui plugin standardını öğreten bir skill'dir: sözleşme, plugin türleri, klasör yapısı, kesin kurallar, test düzeneği, yayın döngüsü ve teslim kontrol listesi. Claude Code için:
+
+```sh
+ln -s "$PWD/skills/ngui-plugin" ~/.claude/skills/ngui-plugin
+```
+
+Sonra "plugin tabanlı nicegui aracım var, şu işe yarayacak bir plugin istiyorum" demen yeterli. Başka bir araç kullanıyorsan `skills/ngui-plugin/SKILL.md` dosyasını ona bağlam olarak ver.
