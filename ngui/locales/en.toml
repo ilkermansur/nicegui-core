@@ -20,3 +20,4 @@
 "err.manifest" = "Invalid plugin manifest: {detail}"
 "cli.created" = "Plugin scaffold created: {path}"
 "err.exists" = "Already exists: {path}"
+"err.config" = "Invalid config file {path}: {detail}"

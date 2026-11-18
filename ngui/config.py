@@ -7,6 +7,8 @@ from pathlib import Path
 
 import tomli_w
 
+from ngui import NguiError
+
 CORE_KEY = "core-plugins"
 DEFAULT_ROLES = {"storage": "storage-sqlite", "auth": "auth-local",
                  "theme": "theme-default", "layout": "layout-sidebar"}
@@ -47,7 +49,10 @@ class Home:
         self.secret_path = self.root / "secret"
 
     def _read(self, path: Path) -> dict:
-        return tomllib.loads(path.read_text()) if path.exists() else {}
+        try:
+            return tomllib.loads(path.read_text()) if path.exists() else {}
+        except tomllib.TOMLDecodeError as e:
+            raise NguiError("err.config", path=str(path), detail=str(e)) from e
 
     def _write(self, path: Path, data: dict) -> None:
         self._atomic_write(path, tomli_w.dumps(data))
@@ -73,16 +78,7 @@ class Home:
 
     def secret(self) -> str:
         if not self.secret_path.exists():
-            self.root.mkdir(parents=True, exist_ok=True)
-            fd, tmp = tempfile.mkstemp(dir=self.root)
-            with os.fdopen(fd, "w") as f:
-                f.write(secrets.token_hex(32))
-            try:
-                os.link(tmp, self.secret_path)  # fails if another process won the race
-            except FileExistsError:
-                pass
-            finally:
-                os.unlink(tmp)
+            self._atomic_write(self.secret_path, secrets.token_hex(32))  # mode 0o600
         return self.secret_path.read_text()
 
 

@@ -60,8 +60,25 @@ def test_new_creates_scaffold(home_env, tmp_path, capsys, monkeypatch):
     assert main(["new", "Bad Name", "--dir", str(tmp_path)]) == 1
 
 
-def test_every_err_key_has_tr_and_en():
-    keys = set(re.findall(r'ManagerError\("(err\.[a-z_]+)"', (KERNEL_DIR / "ngui" / "manager.py").read_text()))
+def test_every_locale_key_has_tr_and_en():
+    keys = {k for f in (KERNEL_DIR / "ngui").glob("*.py")
+            for k in re.findall(r'"((?:err|cli|recovery)\.[a-z_]+)"', f.read_text())}
+    assert "err.git" in keys and "recovery.title" in keys
     for lang in ("tr", "en"):
         table = tomllib.loads((KERNEL_DIR / "ngui" / "locales" / f"{lang}.toml").read_text())
         assert keys <= set(table), (lang, keys - set(table))
+
+
+def test_every_mutating_command_syncs_deps(home_env, hello_url, monkeypatch):
+    synced = []
+    monkeypatch.setattr("ngui.cli.Manager.sync_deps", lambda self: synced.append(1))
+    main(["add", hello_url]); main(["disable", "hello"]); main(["remove", "hello"])
+    assert synced == [1, 1, 1]
+
+
+def test_broken_config_is_reported(home_env, capsys, monkeypatch):
+    monkeypatch.setenv("NGUI_LANG", "en")
+    home_env.config_path.write_text("enabled = [")
+    assert main(["list"]) == 1
+    err = capsys.readouterr().err
+    assert "Invalid config file" in err and str(home_env.config_path) in err

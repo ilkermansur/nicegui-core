@@ -20,3 +20,4 @@
 "err.manifest" = "Geçersiz eklenti manifesti: {detail}"
 "cli.created" = "Eklenti iskeleti oluşturuldu: {path}"
 "err.exists" = "Zaten var: {path}"
+"err.config" = "Geçersiz ayar dosyası {path}: {detail}"

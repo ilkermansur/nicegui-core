@@ -1,3 +1,6 @@
+import pytest
+
+from ngui import NguiError
 from ngui.config import LockEntry, home_from_env
 
 
@@ -37,3 +40,10 @@ def test_unknown_keys_are_ignored(home):
     home.lock_path.write_text('[ai]\nurl = "u"\ncommit = "c"\nfuture = 1\n')
     assert home.load_config().default_lang == "en"
     assert home.load_lock()["ai"] == LockEntry("u", "c")
+
+
+def test_broken_toml_raises_keyed_error(home):
+    home.root.mkdir(parents=True)
+    home.lock_path.write_text("[ai")
+    with pytest.raises(NguiError) as e: home.load_lock()
+    assert e.value.key == "err.config" and e.value.vars["path"] == str(home.lock_path)
