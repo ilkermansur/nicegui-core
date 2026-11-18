@@ -10,12 +10,15 @@ docker compose up -d --build
 docker compose exec app ngui list
 ```
 
+`.env` içinde `GITHUB_TOKEN` bulunabilir: `.env` asla commit edilmez ve paylaşılmaz. Host portu 8080 doluysa `.env` içinde `NGUI_HOST_PORT` değerini değiştir.
+
 Core repo tanımlı değilse uygulama kurtarma sayfasını gösterir.
 
 ## Plugin geliştirme döngüsü
 
 1. `docker compose exec app ngui --help` ile komutlara bak.
-2. Yeni plugin iskeleti oluştur, düzenle, `ngui enable <ad>` ile etkinleştir.
+2. `ngui new <ad>` ile iskelet oluştur, `ngui link <ad> <yol>` ile yerel klasörü bağla, işin bitince `ngui unlink`.
+   Yayınlanmış plugin'leri `ngui update` ile güncelle; `ngui enable <ad>` ile etkinleştir.
 3. Değişiklik sonrası uygulama yeniden başlar; hata olursa kurtarma sayfasından bak.
 
 Plugin sözleşmesi (manifest, roller, bus): [CONTRACT.md](CONTRACT.md)

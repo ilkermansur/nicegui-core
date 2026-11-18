@@ -4,3 +4,9 @@ tests
 docs
 __pycache__
 .nicegui
+.env
+.env.*
+!.env.example
+*.egg-info
+.pytest_cache
+.superpowers
