@@ -9,7 +9,7 @@
 "err.not_found" = "Eklenti hiçbir kaynakta bulunamadı: {name}"
 "err.already_installed" = "Zaten kurulu: {id}"
 "err.not_installed" = "{id} kurulu değil."
-"err.is_core" = "{id} bir çekirdek eklentidir, kaldırılamaz."
+"err.is_core" = "{id} bir çekirdek eklentidir: çekirdek repoyla birlikte güncellenir, geri alınır ve kaldırılamaz (`ngui update core`, `ngui rollback core`)."
 "err.fills_role" = "{id} bir rolü dolduruyor; önce rolü başka bir eklentiye verin."
 "err.wrong_role" = "{id}, {role} rolünü dolduramaz."
 "err.bad_path" = "Eklenti klasörü değil: {path}"

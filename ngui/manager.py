@@ -102,15 +102,22 @@ class Manager:
         if pid not in discover(self.home, cfg):
             raise ManagerError("err.not_installed", id=pid)
 
-    def remove(self, pid: str) -> None:
-        cfg = self.home.load_config()
+    def _repo(self, pid: str) -> tuple[str, Path]:
+        """Lock key and clone dir of an installed repo; `core` is the core-plugins repo."""
         if (self.home.repos_dir / CORE_KEY / pid).is_dir():
             raise ManagerError("err.is_core", id=pid)
+        key = CORE_KEY if pid == "core" else pid
+        if not (self.home.repos_dir / key).is_dir():
+            raise ManagerError("err.not_installed", id=pid)
+        return key, self.home.repos_dir / key
+
+    def remove(self, pid: str) -> None:
+        cfg = self.home.load_config()
+        if pid == "core":
+            raise ManagerError("err.is_core", id=pid)
+        _, dest = self._repo(pid)
         if pid in cfg.roles.values():
             raise ManagerError("err.fills_role", id=pid)
-        dest = self.home.repos_dir / pid
-        if not dest.is_dir():
-            raise ManagerError("err.not_installed", id=pid)
         shutil.rmtree(dest)
         lock = self.home.load_lock()
         lock.pop(pid, None)
@@ -170,45 +177,37 @@ class Manager:
                                      lock[pid].commit if pid in lock else "", problems.get(pid, "")))
         return rows
 
-    def _repo_key(self, pid: str) -> str:
-        return CORE_KEY if pid == "core" else pid
-
     def update(self, pid: str) -> str:
-        key = self._repo_key(pid)
-        dest, lock = self.home.repos_dir / key, self.home.load_lock()
-        if key not in lock or not dest.is_dir():
+        key, dest = self._repo(pid)
+        lock = self.home.load_lock()
+        if key not in lock:
             raise ManagerError("err.not_installed", id=pid)
         old = lock[key].commit
         try:
-            new = gitops.pull(dest)
-        except gitops.GitError as e:
-            raise ManagerError("err.git", detail=str(e)) from e
-        if new == old:
-            return new
-        for toml in [dest / "plugin.toml", *dest.glob("*/plugin.toml")]:
-            if not toml.is_file():
-                continue
-            try:
-                m = load_manifest(toml.parent)
-            except ManifestError:
-                gitops.checkout(dest, old)
-                raise
-            if not core_compatible(m.core):
-                gitops.checkout(dest, old)
-                raise ManagerError("err.needs_self_update", plugin=m.id, spec=m.core)
+            if (new := gitops.pull(dest)) == old:
+                return new
+            for toml in [dest / "plugin.toml", *dest.glob("*/plugin.toml")]:
+                m = load_manifest(toml.parent) if toml.is_file() else None
+                if m and not core_compatible(m.core):
+                    raise ManagerError("err.needs_self_update", plugin=m.id, spec=m.core)
+        except Exception as e:
+            gitops.checkout(dest, old)
+            if isinstance(e, ManifestError):
+                raise ManagerError("err.manifest", detail=str(e)) from e
+            raise
         lock[key] = LockEntry(lock[key].url, new, previous=old)
         self.home.save_lock(lock)
         return new
 
     def rollback(self, pid: str) -> str:
-        key = self._repo_key(pid)
+        key, dest = self._repo(pid)
         lock = self.home.load_lock()
         if key not in lock:
             raise ManagerError("err.not_installed", id=pid)
         entry = lock[key]
         if not entry.previous:
             raise ManagerError("err.no_previous")
-        gitops.checkout(self.home.repos_dir / key, entry.previous)
+        gitops.checkout(dest, entry.previous)
         lock[key] = LockEntry(entry.url, entry.previous, entry.commit)
         self.home.save_lock(lock)
         return entry.previous

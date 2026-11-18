@@ -9,7 +9,7 @@
 "err.not_found" = "Plugin not found in any source: {name}"
 "err.already_installed" = "Already installed: {id}"
 "err.not_installed" = "Not installed: {id}"
-"err.is_core" = "{id} is a core plugin and cannot be removed."
+"err.is_core" = "{id} is a core plugin: it is updated, rolled back and kept with the core repo (`ngui update core`, `ngui rollback core`)."
 "err.fills_role" = "{id} fills a role; switch the role to another plugin first."
 "err.wrong_role" = "{id} cannot fill the role {role}."
 "err.bad_path" = "Not a plugin directory: {path}"

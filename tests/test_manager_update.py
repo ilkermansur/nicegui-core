@@ -68,3 +68,27 @@ def test_catalog_survives_network_error(mgr, monkeypatch):
 def test_self_update_without_git(mgr, tmp_path):
     with pytest.raises(ManagerError) as e: mgr.self_update(tmp_path)
     assert e.value.key == "err.self_update_docker"
+
+
+def test_failed_update_restores_lock_commit(mgr, hello_url):
+    import shutil
+    mgr.add(hello_url); first = mgr.home.load_lock()["hello"].commit
+    commit_change(hello_url); mgr.update("hello"); mgr.rollback("hello")
+    shutil.rmtree(hello_url)
+    with pytest.raises(ManagerError) as e: mgr.update("hello")
+    assert e.value.key == "err.git"
+    assert head(mgr.home.repos_dir / "hello") == first == mgr.home.load_lock()["hello"].commit
+
+
+def test_rollback_without_repo_dir(mgr, hello_url):
+    import shutil
+    mgr.add(hello_url); commit_change(hello_url); mgr.update("hello")
+    shutil.rmtree(mgr.home.repos_dir / "hello")
+    with pytest.raises(ManagerError) as e: mgr.rollback("hello")
+    assert e.value.key == "err.not_installed"
+
+
+@pytest.mark.parametrize("op", ["update", "rollback", "remove"])
+def test_core_plugin_id_is_refused(mgr_with_core, op):
+    with pytest.raises(ManagerError) as e: getattr(mgr_with_core, op)("layout-fake")
+    assert e.value.key == "err.is_core"
