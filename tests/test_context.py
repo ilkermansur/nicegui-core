@@ -37,6 +37,6 @@ def test_data_dir_is_per_plugin_and_created(home, tmp_path):
     assert d == home.data_dir / "plugins" / "ai" and d.is_dir()
 
 
-def test_contract_is_1_1():
+def test_contract_is_1_2():
     from ngui.manifest import core_compatible
-    assert core_compatible(">=1.1,<2") and core_compatible(">=1,<2")
+    assert core_compatible(">=1.2,<2") and core_compatible(">=1.1,<2") and core_compatible(">=1,<2")

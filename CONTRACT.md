@@ -1,4 +1,4 @@
-# ngui Plugin Sözleşmesi (sürüm 1.1)
+# ngui Plugin Sözleşmesi (sürüm 1.2)
 
 Bu belge plugin yazarının okuması gereken tek belgedir. İskelet için: `ngui new <ad>`.
 
@@ -36,7 +36,7 @@ Bozuk `plugin.toml`, hata veren `setup` ya da eksik `requires` yalnızca o plugi
 | `ctx.id`, `ctx.manifest`, `ctx.path` | Kimlik, okunmuş manifest, plugin klasörü (`Path`) |
 | `ctx.log` | `logging.Logger` (`ngui.<id>`) |
 | `ctx.role(name)` | Rol nesnesi; yüklü değilse `LookupError`. Yalnızca önceden yüklenen roller görülür |
-| `ctx.data_dir` | Plugin'e ait dosya klasörü (`Path`, `/data/data/plugins/<id>`): SQLite dosyası, yüklenen dosyalar. Plugin kaldırılınca silinmez. 1.1 ile geldi; kullanan plugin `core = ">=1.1,<2"` yazar |
+| `ctx.data_dir` | Plugin'e ait dosya klasörü (`Path`, `/data/data/plugins/<id>`): SQLite dosyası, yüklenen dosyalar. Plugin kaldırılınca silinmez. 1.1 ile geldi; kullanan plugin `core = ">=1.1,<2"` yazar. |
 | `ctx.storage` | Kısayol: `ctx.role("storage").for_plugin(ctx.id)` |
 | `ctx.bus` | Olay yolu (bkz. 4) |
 | `ctx.services` | Servis kaydı (bkz. 4) |
@@ -60,9 +60,9 @@ Her rolü tam bir plugin doldurur. Özellik plugin'i hangi plugin'in doldurduğu
 | `auth` | `current_user()` | `{id, name, roles}` |
 | | `has(permission)` | `bool` |
 | `theme` | `mode`, `set_mode(mode)` | `"light"`, `"dark"` veya `"auto"` |
-| | `card(title=None, actions=None)` | Kart |
-| | `kpi(label, value, icon=None, tone="neutral")` | KPI kartı |
-| | `page_header(title, description=None)` | Sayfa başlığı |
+| | `card(title=None, actions=None, meta=None)` | Kart. `actions` başlığın sağına düğme çizen fonksiyon; `meta` başlığın sağında soluk üst bilgi ("Son 30 gün") |
+| | `kpi(label, value, icon=None, tone="neutral", delta=None, trend=None)` | KPI kartı. `delta` değerin altında küçük değişim metni ("19 dünden beri"); `trend` `"up"`, `"down"` ya da `"flat"`: ok ve rengi seçer |
+| | `page_header(title, description=None, actions=None)` | Sayfa başlığı. `actions` başlığın sağına düğme çizen fonksiyon |
 | `layout` | `page(path, title, icon=None, permission=None)` | Sayfa kaydeden dekoratör; menüye ekler, yetkiyi auth'a sorar. `title` bir `str` ya da `lambda: ctx.t("title")` gibi çağrılabilir olabilir; layout çağrılabilir başlığı her çizimde yeniden çağırır, böylece dil değişince menü güncellenir |
 | | `add(slot, builder)` | Yuvaya (`nav`, `header`, `main`, `statusbar`) UI ekler; bilinmeyen yuva sessizce yok sayılır |
 
@@ -73,6 +73,8 @@ def setup(ctx):
         ctx.role("theme").page_header(ctx.t("title"), ctx.t("description"))
         ctx.role("theme").kpi(ctx.t("total"), len(ctx.storage.list()), tone="success")
 ```
+
+Tema üyelerinden `card(meta=)`, `kpi(delta=, trend=)` ve `page_header(actions=)` sözleşme 1.2 ile geldi; bunları kullanan plugin `core = ">=1.2,<2"` yazar.
 
 **Rol plugin'i yazıyorsanız:** `plugin.toml`'da `provides` yazın ve `setup(ctx)` rolün uygulamasını **döndürsün** (`return MyTheme()`). `None` dönerse plugin "bozuk" olur. Plugin yalnızca config'te o role atanmışsa (`ngui use <rol> <id>`) yüklenir; atanmamışsa sessizce atlanır. Özellik plugin'inin dönüş değeri yok sayılır. Roller özellik plugin'lerinden önce yüklendiği için bir rol plugin'inin `requires` listesi yalnızca kendinden önce yüklenen plugin'leri içerebilir; aksi halde "missing requirement" ile bozuk olur.
 
