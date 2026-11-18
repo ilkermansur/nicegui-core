@@ -121,3 +121,17 @@ def test_status_and_sync_deps_honour_core_compat(mgr_with_core):
     toml.write_text(toml.read_text() + 'core = ">=2"\n')
     assert {s.id: s for s in mgr_with_core.status()}["hello"].problem == "incompatible core: >=2"
     assert mgr_with_core.sync_deps() is False and calls == []
+
+
+def test_bootstrap_adopts_env_core_repo_for_existing_config(mgr, core_url, monkeypatch):
+    mgr.home.save_config(mgr.home.load_config())  # config exists, core_repo empty
+    monkeypatch.setenv("NGUI_CORE_REPO", core_url); mgr.bootstrap()
+    assert mgr.home.load_config().core_repo == core_url
+    assert (mgr.home.repos_dir / "core-plugins" / "layout-fake").is_dir()
+
+
+def test_bootstrap_reclones_half_cloned_core(mgr, core_url, monkeypatch):
+    (mgr.home.repos_dir / "core-plugins" / "junk").mkdir(parents=True)
+    monkeypatch.setenv("NGUI_CORE_REPO", core_url); mgr.bootstrap()
+    assert (mgr.home.repos_dir / "core-plugins" / "layout-fake").is_dir()
+    assert not (mgr.home.repos_dir / "core-plugins" / "junk").exists()

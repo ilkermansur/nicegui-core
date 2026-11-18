@@ -56,10 +56,12 @@ class Manager:
         self.run_cmd: Callable[[list[str]], subprocess.CompletedProcess] = _run
 
     def bootstrap(self) -> None:
-        if not self.home.config_path.exists():
-            self.home.save_config(Config(core_repo=os.environ.get("NGUI_CORE_REPO", "")))
         cfg, dest = self.home.load_config(), self.home.repos_dir / CORE_KEY
-        if cfg.core_repo and not dest.exists():
+        if not cfg.core_repo:  # first boot, or NGUI_CORE_REPO set later
+            cfg.core_repo = os.environ.get("NGUI_CORE_REPO", "")
+            self.home.save_config(cfg)
+        if cfg.core_repo and not (dest / ".git" / "HEAD").is_file():
+            shutil.rmtree(dest, ignore_errors=True)  # missing or a half-finished clone
             try:
                 commit = gitops.clone(cfg.core_repo, dest)
             except gitops.GitError as e:
