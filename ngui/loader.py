@@ -1,5 +1,7 @@
 import importlib.util
+import logging
 import sys
+import types
 from dataclasses import dataclass, field
 from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
@@ -8,6 +10,8 @@ from ngui.config import CORE_KEY, Config, Home
 from ngui.context import Context, Kernel
 from ngui.manifest import Manifest, ManifestError, core_compatible, load_manifest
 from ngui.roles import ROLE_ORDER
+
+log = logging.getLogger("ngui.loader")
 
 
 @dataclass
@@ -82,6 +86,10 @@ def plan(manifests: dict[str, Manifest], cfg: Config) -> tuple[list[str], dict[s
 
 
 def _import(manifest: Manifest):
+    if "ngui_plugins" not in sys.modules:  # parent package, so every relative import form works
+        parent = types.ModuleType("ngui_plugins")
+        parent.__path__ = []
+        sys.modules["ngui_plugins"] = parent
     name = f"ngui_plugins.{manifest.id.replace('-', '_')}"
     spec = importlib.util.spec_from_file_location(
         name, manifest.path / "__init__.py", submodule_search_locations=[str(manifest.path)])
@@ -120,5 +128,7 @@ def load(kernel: Kernel) -> LoadResult:
             kernel.roles[m.provides] = value
         result.loaded.append(pid)
     result.missing_roles = [r for r in ROLE_ORDER if r not in kernel.roles]
+    for pid, why in result.broken.items():  # visible in `docker compose logs`, not only in the store
+        log.error("plugin %s not loaded: %s", pid, why)
     kernel.result = result
     return result

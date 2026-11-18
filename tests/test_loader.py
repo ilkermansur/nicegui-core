@@ -1,3 +1,4 @@
+import pytest
 import shutil
 
 from ngui.bus import Bus, Services
@@ -121,3 +122,20 @@ def test_plugin_exiting_at_import_is_isolated(kernel):
     kernel.config.enabled = ["quitter2", "hello"]
     r = load(kernel)
     assert "hello" in r.loaded and r.broken["quitter2"].startswith("setup failed: SystemExit")
+
+
+def test_broken_plugins_are_logged(kernel, caplog):
+    kernel.config.enabled = ["boom", "hello"]
+    with caplog.at_level("ERROR", logger="ngui.loader"):
+        load(kernel)
+    assert "plugin boom not loaded: setup failed: RuntimeError" in caplog.text
+
+
+@pytest.mark.parametrize("stmt", ["from . import helper", "from .helper import VALUE", "from .helper import *"])
+def test_multi_file_plugin_relative_imports(kernel, stmt):
+    _plugin(kernel, "multi", body="return None")
+    d = kernel.home.repos_dir / "multi"
+    (d / "helper.py").write_text("VALUE = 42\n")
+    (d / "__init__.py").write_text(stmt + "\n\ndef setup(ctx):\n    pass\n")
+    kernel.config.enabled = ["multi"]
+    assert "multi" in load(kernel).loaded
