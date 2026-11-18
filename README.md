@@ -14,6 +14,14 @@ docker compose exec app ngui list
 
 Core repo tanımlı değilse uygulama kurtarma sayfasını gösterir.
 
+## Kabul testi
+
+```sh
+scripts/acceptance.sh
+```
+
+Ayrı bir compose projesinde (kendi volume'u, port 18081) gerçek akışı baştan sona dener: core plugin'lerin GitHub'dan çekilmesi, plugin ekleme/kapatma/açma/kaldırma, `sys.exit` çağıran bozuk plugin, `update core`, yeniden başlatma ve yeniden derleme sonrası verinin korunması. Asıl `ngui-data` volume'una dokunmaz. Çekirdekte her değişiklikten sonra çalıştır.
+
 ## Yedekleme
 
 Bütün durum (`config.toml`, `plugins.lock`, plugin repoları ve verileri, oturum anahtarı) `/data` volume'undadır. `GITHUB_TOKEN` orada değildir.
