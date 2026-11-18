@@ -3,10 +3,9 @@ import logging
 import os
 import signal
 import sys
-from pathlib import Path
 from typing import NoReturn
 
-from ngui import recovery
+from ngui import LOCALES_DIR, recovery
 from ngui.bus import Bus, Services
 from ngui.config import Home, home_from_env
 from ngui.context import Kernel
@@ -52,10 +51,10 @@ def run(home: Home | None = None) -> None:
         mgr.sync_deps()
     except ManagerError as e:
         log.error("dependency sync failed: %s %s", e.key, e.vars)
-    sys.path.insert(0, str(home.pydeps_dir))
+    sys.path.append(str(home.pydeps_dir))  # plugin deps never shadow kernel packages
     cfg = home.load_config()
     i18n = I18n(cfg.default_lang)
-    i18n.load("core", Path(__file__).parent / "locales")
+    i18n.load("core", LOCALES_DIR)
     kernel = Kernel(home, cfg, Bus(), Services(), i18n)
     kernel.manager, kernel.restart = mgr, restart
     result = load(kernel)

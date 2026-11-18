@@ -72,3 +72,10 @@ def test_missing_dir_and_broken_toml(tmp_path):
     (d / "tr.toml").write_text("= broken")
     i.load("y", d)
     assert i.t("y", "k") == "k"
+
+
+def test_getter_error_logged_at_debug(i18n, caplog):
+    i18n.lang_getter = lambda: 1 / 0
+    with caplog.at_level("DEBUG", logger="ngui.i18n"):
+        i18n.current_lang()
+    assert [r.levelname for r in caplog.records] == ["DEBUG"]

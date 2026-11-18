@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 
-from ngui import KERNEL_DIR
+from ngui import KERNEL_DIR, LOCALES_DIR
 from ngui.app import run, signal_app
 from ngui.config import home_from_env
 from ngui.i18n import I18n
@@ -44,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     home = home_from_env()
     i18n = I18n(home.load_config().default_lang)
-    i18n.load("core", KERNEL_DIR / "ngui" / "locales")
+    i18n.load("core", LOCALES_DIR)
     lang = os.environ.get("NGUI_LANG") or None
 
     def t(key: str, **vars) -> str:

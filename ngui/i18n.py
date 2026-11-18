@@ -28,8 +28,8 @@ class I18n:
         try:
             if self.lang_getter and (lang := self.lang_getter()):
                 return lang
-        except Exception:
-            log.warning("i18n: lang_getter failed", exc_info=True)
+        except Exception as e:  # e.g. storage outside a request: expected, not alarming
+            log.debug("i18n: lang_getter failed: %r", e)
         return self.default_lang
 
     def t(self, namespace: str, key: str, lang: str | None = None, **vars) -> str:
@@ -50,17 +50,13 @@ class I18n:
         if self.lang_setter:
             self.lang_setter(lang)
         try:
-            from nicegui import context, ui
+            from nicegui import ui
             from nicegui.slot import Slot
 
-            # Slot.get_stack() has no side effects; `context.client` alone would
-            # create a pseudo client when called outside a running app.
-            if not Slot.get_stack():
-                return
-            context.client
+            if Slot.get_stack():  # only inside a UI context
+                ui.navigate.reload()
         except Exception:
-            return
-        ui.navigate.reload()
+            pass
 
     def languages(self) -> list[str]:
         return sorted({lang for langs in self._tables.values() for lang in langs})

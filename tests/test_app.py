@@ -134,3 +134,20 @@ def test_signal_app_with_garbage_pidfile(home):
 
 def test_signal_app_without_pidfile(home):
     assert signal_app(home) is False
+
+
+def test_pydeps_go_last_on_sys_path(home, monkeypatch):
+    import signal
+    from ngui.app import run
+    monkeypatch.delenv("NGUI_CORE_REPO", raising=False)
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    for name in ("signal", "pthread_sigmask"):
+        monkeypatch.setattr(signal, name, lambda *a: None)
+
+    def stop(kernel):
+        raise RuntimeError("stop before ui.run")
+
+    monkeypatch.setattr("ngui.app.load", stop)
+    with pytest.raises(RuntimeError):
+        run(home)
+    assert sys.path[-1] == str(home.pydeps_dir)  # plugin deps never shadow kernel packages

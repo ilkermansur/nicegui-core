@@ -2,6 +2,7 @@ from pathlib import Path
 
 CONTRACT_VERSION = "1.0"
 KERNEL_DIR = Path(__file__).resolve().parent.parent
+LOCALES_DIR = KERNEL_DIR / "ngui" / "locales"  # the kernel's own "core" texts
 
 
 class NguiError(Exception):
