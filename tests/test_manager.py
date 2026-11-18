@@ -63,7 +63,7 @@ def test_remove(mgr, hello_url):
     assert "hello" not in mgr.home.load_lock()
 
 
-@pytest.mark.parametrize("pid,key", [("layout-fake", "err.is_core"), ("ghost", "err.not_installed")])
+@pytest.mark.parametrize("pid,key", [("layout-fake", "err.is_core"), ("core", "err.is_core"), ("ghost", "err.not_installed")])
 def test_remove_refusals(mgr_with_core, pid, key):
     with pytest.raises(ManagerError) as e: mgr_with_core.remove(pid)
     assert e.value.key == key
