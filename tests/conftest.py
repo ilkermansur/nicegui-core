@@ -109,3 +109,16 @@ def link_hello_with_deps(mgr, deps: list[str]) -> None:
     with (dest / "plugin.toml").open("a") as f:
         f.write(f"\ndependencies = {json.dumps(deps)}\n")
     mgr.link("hello", str(dest))
+
+
+@pytest.fixture
+def home_env(tmp_path, core_url, monkeypatch):
+    from ngui.manager import Manager
+
+    root = tmp_path / "cli-home"
+    monkeypatch.setenv("NGUI_HOME", str(root))
+    monkeypatch.setenv("NGUI_CORE_REPO", core_url)
+    mgr = Manager(Home(root))
+    mgr.bootstrap()
+    fake_roles(mgr.home)
+    return mgr.home

@@ -1,3 +1,3 @@
-from ngui.app import run
+from ngui.cli import main
 
-run()
+raise SystemExit(main())
