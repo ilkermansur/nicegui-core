@@ -1,1 +1,5 @@
 "hello" = "Merhaba {name}"
+"recovery.title" = "Kurtarma modu"
+"recovery.missing_role" = "Eksik rol: {role}"
+"recovery.broken" = "Bozuk eklentiler"
+"recovery.fix_hint" = "Düzeltmek için sunucuda şu komutları kullanın:"

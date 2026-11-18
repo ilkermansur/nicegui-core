@@ -1,1 +1,5 @@
 "hello" = "Hello {name}"
+"recovery.title" = "Recovery mode"
+"recovery.missing_role" = "Missing role: {role}"
+"recovery.broken" = "Broken plugins"
+"recovery.fix_hint" = "To fix this, run these commands on the server:"
