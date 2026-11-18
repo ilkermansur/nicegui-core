@@ -64,7 +64,7 @@ Her rolü tam bir plugin doldurur. Özellik plugin'i hangi plugin'in doldurduğu
 | | `kpi(label, value, icon=None, tone="neutral", delta=None, trend=None)` | KPI kartı. `delta` değerin altında küçük değişim metni ("19 dünden beri"); `trend` `"up"`, `"down"` ya da `"flat"`: ok ve rengi seçer |
 | | `page_header(title, description=None, actions=None)` | Sayfa başlığı. `actions` başlığın sağına düğme çizen fonksiyon |
 | `layout` | `page(path, title, icon=None, permission=None)` | Sayfa kaydeden dekoratör; menüye ekler, yetkiyi auth'a sorar. `title` bir `str` ya da `lambda: ctx.t("title")` gibi çağrılabilir olabilir; layout çağrılabilir başlığı her çizimde yeniden çağırır, böylece dil değişince menü güncellenir |
-| | `add(slot, builder)` | Yuvaya (`nav`, `header`, `main`, `statusbar`) UI ekler; bilinmeyen yuva sessizce yok sayılır |
+| | `add(slot, builder)` | Yuvaya (`nav`, `header`, `main`, `statusbar`; 1.2 ile `user`: kullanıcı menüsü) UI ekler; bilinmeyen yuva sessizce yok sayılır |
 
 ```python
 def setup(ctx):
