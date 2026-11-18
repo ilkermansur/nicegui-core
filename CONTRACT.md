@@ -20,7 +20,7 @@ nicegui-plugin-<id>/
 | `core` | hayır | Sözleşme sürümü aralığı, varsayılan `">=1,<2"`; uyumsuz plugin "bozuk" olur |
 | `provides` | hayır | Rol dolduruyorsa `"storage"`, `"auth"`, `"theme"` veya `"layout"` |
 | `requires` | hayır | Başka plugin id'leri; biri yoksa/bozuksa bu plugin yüklenmez; yükleme sırası buna göre |
-| `dependencies` | hayır | pip bağımlılıkları (`["openai>=1.0"]`) |
+| `dependencies` | hayır | pip bağımlılıkları (`["openai>=1.0"]`); NiceGUI ve çekirdeğin kendi paketlerini gölgeleyemez (onlar önce bulunur) |
 | `permissions` | hayır | Tanımladığı yetki adları (`["notes.edit"]`) |
 
 Bozuk `plugin.toml`, hata veren `setup` ya da eksik `requires` yalnızca o plugin'i atlatır; uygulama açılır.
@@ -70,7 +70,7 @@ def setup(ctx):
         ctx.role("theme").kpi(ctx.t("total"), len(ctx.storage.list()), tone="success")
 ```
 
-**Rol plugin'i yazıyorsanız:** `plugin.toml`'da `provides` yazın ve `setup(ctx)` rolün uygulamasını **döndürsün** (`return MyTheme()`). `None` dönerse plugin "bozuk" olur. Plugin yalnızca config'te o role atanmışsa (`ngui use <rol> <id>`) yüklenir; atanmamışsa sessizce atlanır. Özellik plugin'inin dönüş değeri yok sayılır.
+**Rol plugin'i yazıyorsanız:** `plugin.toml`'da `provides` yazın ve `setup(ctx)` rolün uygulamasını **döndürsün** (`return MyTheme()`). `None` dönerse plugin "bozuk" olur. Plugin yalnızca config'te o role atanmışsa (`ngui use <rol> <id>`) yüklenir; atanmamışsa sessizce atlanır. Özellik plugin'inin dönüş değeri yok sayılır. Roller özellik plugin'lerinden önce yüklendiği için bir rol plugin'inin `requires` listesi yalnızca kendinden önce yüklenen plugin'leri içerebilir; aksi halde "missing requirement" ile bozuk olur.
 
 **Depolama kuralları:**
 - Varsayılan kapsam `(plugin, o anki kullanıcı)`; kullanıcı her çağrıda `auth.current_user()` ile sorulur, `setup` sırasında sabitlenmez.
