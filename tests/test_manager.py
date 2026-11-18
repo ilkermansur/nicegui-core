@@ -91,8 +91,15 @@ def test_use_checks_provides(mgr_with_core):
 
 def test_link_and_unlink(mgr, tmp_path):
     dev = shutil.copytree(FIXTURES / "plugins" / "hello", tmp_path / "dev")
-    mgr.link("hello", str(dev)); assert mgr.home.load_config().links["hello"] == str(dev)
+    mgr.link("hello", str(dev)); assert mgr.home.load_config().links["hello"] == str(dev.resolve())
     mgr.unlink("hello"); assert "hello" not in mgr.home.load_config().links
+
+
+def test_link_stores_absolute_path(mgr, tmp_path, monkeypatch):
+    shutil.copytree(FIXTURES / "plugins" / "hello", tmp_path / "dev")
+    monkeypatch.chdir(tmp_path)
+    mgr.link("hello", "dev")
+    assert mgr.home.load_config().links["hello"] == str((tmp_path / "dev").resolve())
 
 
 def test_link_bad_path(mgr, tmp_path):

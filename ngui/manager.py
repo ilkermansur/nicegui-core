@@ -156,7 +156,7 @@ class Manager:
         if not (Path(path).expanduser() / "plugin.toml").is_file():
             raise ManagerError("err.bad_path", path=path)
         cfg = self.home.load_config()
-        cfg.links[pid] = path
+        cfg.links[pid] = str(Path(path).expanduser().resolve())
         if pid not in cfg.enabled:
             cfg.enabled.append(pid)
         self.home.save_config(cfg)

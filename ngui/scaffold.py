@@ -1,6 +1,8 @@
-import subprocess
+import shutil
 from pathlib import Path
 
+from ngui.gitops import GitError, _git
+from ngui.manager import ManagerError
 from ngui.manifest import ID_PATTERN, RESERVED_IDS, ManifestError
 
 _FILES = {
@@ -35,10 +37,16 @@ def new_plugin(name: str, parent: Path) -> Path:
     dest = Path(parent) / f"nicegui-plugin-{name}"
     if dest.exists():
         raise FileExistsError(dest)
-    for rel, text in _FILES.items():
-        f = dest / rel
-        f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(text.format(name=name), encoding="utf-8")
-    for cmd in (["init", "-b", "main"], ["add", "-A"], ["commit", "-m", "Initial plugin scaffold"]):
-        subprocess.run(["git", *cmd], cwd=dest, check=True, capture_output=True)
+    try:
+        for rel, text in _FILES.items():
+            f = dest / rel
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(text.format(name=name), encoding="utf-8")
+        _git("init", "-b", "main", cwd=dest)
+        _git("add", "-A", cwd=dest)
+        _git("-c", "user.name=ngui", "-c", "user.email=ngui@localhost",
+             "commit", "-m", "Initial plugin scaffold", cwd=dest)
+    except (GitError, OSError) as e:
+        shutil.rmtree(dest, ignore_errors=True)
+        raise ManagerError("err.git", detail=str(e)) from e
     return dest

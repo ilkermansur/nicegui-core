@@ -1,5 +1,8 @@
 import pytest
 
+from ngui import gitops
+from ngui.manager import ManagerError
+
 from ngui import KERNEL_DIR
 from ngui.gitops import head
 from ngui.loader import load
@@ -36,3 +39,22 @@ def test_contract_mentions_every_role_method():
     for name in ["for_plugin", "purge", "for_user", "shared", "current_user", "has", "set_mode",
                  "card", "kpi", "page_header", "page", "add", "ctx.t", "ctx.services", "ctx.bus"]:
         assert name in text, name
+
+
+def test_scaffold_works_without_git_identity(tmp_path, monkeypatch):
+    for who in ("AUTHOR", "COMMITTER"):
+        monkeypatch.delenv(f"GIT_{who}_NAME")
+        monkeypatch.delenv(f"GIT_{who}_EMAIL")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    assert head(new_plugin("notes", tmp_path / "out"))
+
+
+def test_scaffold_git_failure_cleans_up(tmp_path, monkeypatch):
+    def boom(*a, **k):
+        raise gitops.GitError("no git")
+    monkeypatch.setattr("ngui.scaffold._git", boom)
+    with pytest.raises(ManagerError) as e:
+        new_plugin("notes", tmp_path)
+    assert e.value.key == "err.git"
+    assert not (tmp_path / "nicegui-plugin-notes").exists()

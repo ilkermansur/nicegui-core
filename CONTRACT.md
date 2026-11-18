@@ -75,6 +75,7 @@ def setup(ctx):
 **Depolama kuralları:**
 - Varsayılan kapsam `(plugin, o anki kullanıcı)`; kullanıcı her çağrıda `auth.current_user()` ile sorulur, `setup` sırasında sabitlenmez.
 - İstek bağlamı dışında (zamanlayıcı, bus dinleyicisi, `setup`) `ctx.storage` hata verir; orada `.shared` ya da `.for_user(id)` kullanın.
+- Plugin kaldırılınca verisi silinmez, yeniden kurulunca geri gelir; yalnızca açık bir `purge` siler.
 - Plugin'ler arası ortak alan yoktur; paylaşım bus ile yapılır.
 - Kullanıcı ve yetki varsayımı yapmayın: kullanıcıyı `auth.current_user()`, yetkiyi `auth.has()` ile sorun.
 
@@ -95,6 +96,7 @@ def setup(ctx):
 - Arayüzde sabit metin yok; her metin `ctx.t("kpi.total", count=5)` ile gelir. Anahtarlar plugin'e özeldir.
 - Geri düşme: seçili dil, sonra `en`, sonra anahtarın kendisi. Eksik çeviri uygulamayı bozmaz.
 - `ctx.t` o anki dili okur: sayfa fonksiyonunun içinde çağırın, `setup` içinde sabitlemeyin (yalnızca `layout.page` başlığı gibi kayıt anında gereken yerler hariç).
+- Noktalı anahtarlar tırnak içinde yazılmalı: `"kpi.total" = "..."`. Tırnaksız `kpi.total = ...` iç içe tabloya dönüşür ve anahtar bulunmaz.
 - Yeni dil için `locales/<dil>.toml` eklemek yeterlidir.
 
 ## 6. Tasarım
