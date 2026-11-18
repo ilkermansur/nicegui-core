@@ -53,7 +53,7 @@ def test_scaffold_works_without_git_identity(tmp_path, monkeypatch):
 def test_scaffold_git_failure_cleans_up(tmp_path, monkeypatch):
     def boom(*a, **k):
         raise gitops.GitError("no git")
-    monkeypatch.setattr("ngui.scaffold._git", boom)
+    monkeypatch.setattr("ngui.scaffold.git", boom)
     with pytest.raises(ManagerError) as e:
         new_plugin("notes", tmp_path)
     assert e.value.key == "err.git"

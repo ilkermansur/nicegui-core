@@ -5,9 +5,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from ngui import NguiError
 
-class GitError(Exception):
-    pass
+
+class GitError(NguiError):
+    def __init__(self, detail: str):
+        super().__init__("err.git", detail=detail)
+        self.args = (detail,)
 
 
 def _env() -> dict[str, str]:
@@ -20,7 +24,7 @@ def _env() -> dict[str, str]:
     return env
 
 
-def _git(*args: str, cwd: Path | None = None) -> str:
+def git(*args: str, cwd: Path | None = None) -> str:
     r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, env=_env())
     if r.returncode:
         raise GitError(r.stderr.strip())
@@ -28,12 +32,12 @@ def _git(*args: str, cwd: Path | None = None) -> str:
 
 
 def head(dest: Path) -> str:
-    return _git("rev-parse", "HEAD", cwd=dest)
+    return git("rev-parse", "HEAD", cwd=dest)
 
 
 def clone(url: str, dest: Path) -> str:
     try:
-        _git("clone", url, str(dest))
+        git("clone", url, str(dest))
         return head(dest)
     except GitError:
         shutil.rmtree(dest, ignore_errors=True)
@@ -41,14 +45,14 @@ def clone(url: str, dest: Path) -> str:
 
 
 def pull(dest: Path) -> str:
-    branch = _git("symbolic-ref", "--short", "refs/remotes/origin/HEAD", cwd=dest).removeprefix("origin/")
-    _git("checkout", branch, cwd=dest)
-    _git("pull", "--ff-only", cwd=dest)
+    branch = git("symbolic-ref", "--short", "refs/remotes/origin/HEAD", cwd=dest).removeprefix("origin/")
+    git("checkout", branch, cwd=dest)
+    git("pull", "--ff-only", cwd=dest)
     return head(dest)
 
 
 def checkout(dest: Path, commit: str) -> None:
-    _git("checkout", "--detach", commit, cwd=dest)
+    git("checkout", "--detach", commit, cwd=dest)
 
 
 def exists(url: str) -> bool:

@@ -10,7 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from ngui import gitops
+from ngui import NguiError, gitops
 from ngui.config import CORE_KEY, Config, Home, LockEntry
 from ngui.loader import discover, plan, read_manifests
 from ngui.manifest import ManifestError, core_compatible, load_manifest
@@ -18,10 +18,7 @@ from ngui.manifest import ManifestError, core_compatible, load_manifest
 log = logging.getLogger("ngui.manager")
 
 
-class ManagerError(Exception):
-    def __init__(self, key: str, **vars):
-        super().__init__(key)
-        self.key, self.vars = key, vars
+ManagerError = NguiError
 
 
 @dataclass
@@ -51,13 +48,6 @@ def fetch_json(url: str) -> Any:
 
 def _run(cmd: list[str]) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True)
-
-
-def _clone(url: str, dest: Path) -> str:
-    try:
-        return gitops.clone(url, dest)
-    except gitops.GitError as e:
-        raise ManagerError("err.git", detail=str(e)) from e
 
 
 class Manager:
@@ -94,7 +84,7 @@ class Manager:
         dest = self.home.repos_dir / pid
         if dest.exists():
             raise ManagerError("err.already_installed", id=pid)
-        commit = _clone(url, dest)
+        commit = gitops.clone(url, dest)
         try:
             load_manifest(dest, expected_id=pid)
         except ManifestError:
@@ -218,10 +208,7 @@ class Manager:
         entry = lock[key]
         if not entry.previous:
             raise ManagerError("err.no_previous")
-        try:
-            gitops.checkout(self.home.repos_dir / key, entry.previous)
-        except gitops.GitError as e:
-            raise ManagerError("err.git", detail=str(e)) from e
+        gitops.checkout(self.home.repos_dir / key, entry.previous)
         lock[key] = LockEntry(entry.url, entry.previous, entry.commit)
         self.home.save_lock(lock)
         return entry.previous
@@ -250,10 +237,7 @@ class Manager:
     def self_update(self, kernel_dir: Path) -> str:
         if not (Path(kernel_dir) / ".git").exists():
             raise ManagerError("err.self_update_docker")
-        try:
-            return gitops.pull(Path(kernel_dir))
-        except gitops.GitError as e:
-            raise ManagerError("err.git", detail=str(e)) from e
+        return gitops.pull(Path(kernel_dir))
 
     def catalog(self) -> list[CatalogEntry]:
         entries = []

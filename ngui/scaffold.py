@@ -1,8 +1,7 @@
 import shutil
 from pathlib import Path
 
-from ngui.gitops import GitError, _git
-from ngui.manager import ManagerError
+from ngui.gitops import GitError, git
 from ngui.manifest import ID_PATTERN, RESERVED_IDS, ManifestError
 
 _FILES = {
@@ -42,11 +41,11 @@ def new_plugin(name: str, parent: Path) -> Path:
             f = dest / rel
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_text(text.format(name=name), encoding="utf-8")
-        _git("init", "-b", "main", cwd=dest)
-        _git("add", "-A", cwd=dest)
-        _git("-c", "user.name=ngui", "-c", "user.email=ngui@localhost",
+        git("init", "-b", "main", cwd=dest)
+        git("add", "-A", cwd=dest)
+        git("-c", "user.name=ngui", "-c", "user.email=ngui@localhost",
              "commit", "-m", "Initial plugin scaffold", cwd=dest)
     except (GitError, OSError) as e:
         shutil.rmtree(dest, ignore_errors=True)
-        raise ManagerError("err.git", detail=str(e)) from e
+        raise GitError(str(e)) from e
     return dest
