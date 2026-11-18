@@ -1,0 +1,4 @@
+id = "storage-mem"
+name = "storage-mem"
+version = "0.1.0"
+provides = "storage"

@@ -1,0 +1,4 @@
+id = "layout-fake"
+name = "layout-fake"
+version = "0.1.0"
+provides = "layout"

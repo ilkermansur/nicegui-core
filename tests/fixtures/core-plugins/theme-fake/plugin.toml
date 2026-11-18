@@ -1,0 +1,4 @@
+id = "theme-fake"
+name = "theme-fake"
+version = "0.1.0"
+provides = "theme"

@@ -1,0 +1,4 @@
+id = "needs-missing"
+name = "needs-missing"
+version = "0.1.0"
+requires = ["ghost"]
