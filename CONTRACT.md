@@ -38,6 +38,7 @@ Bozuk `plugin.toml`, hata veren `setup` ya da eksik `requires` yalnızca o plugi
 | `ctx.bus` | Olay yolu (bkz. 4) |
 | `ctx.services` | Servis kaydı (bkz. 4) |
 | `ctx.t(key, **vars)` | Çeviri (bkz. 5) |
+| `ctx.kernel` | Yalnızca sistem plugin'leri (`store`) içindir; özellik plugin'leri kullanmaz. Alanları: `manager` (`ngui.manager.Manager`), `restart()` ve `result` (`LoadResult`) |
 | `ctx.i18n` | Çeviri nesnesi; `ctx.i18n.set_lang("en")` dili değiştirir (genelde yalnızca layout kullanır) |
 
 Yükleme sırası: `storage`, `auth`, `theme`, `layout`, sonra özellik plugin'leri. Sayfaları her zaman `layout.page` ile kaydedin.
@@ -59,12 +60,12 @@ Her rolü tam bir plugin doldurur. Özellik plugin'i hangi plugin'in doldurduğu
 | | `card(title=None, actions=None)` | Kart |
 | | `kpi(label, value, icon=None, tone="neutral")` | KPI kartı |
 | | `page_header(title, description=None)` | Sayfa başlığı |
-| `layout` | `page(path, title, icon=None, permission=None)` | Sayfa kaydeden dekoratör; menüye ekler, yetkiyi auth'a sorar |
+| `layout` | `page(path, title, icon=None, permission=None)` | Sayfa kaydeden dekoratör; menüye ekler, yetkiyi auth'a sorar. `title` bir `str` ya da `lambda: ctx.t("title")` gibi çağrılabilir olabilir; layout çağrılabilir başlığı her çizimde yeniden çağırır, böylece dil değişince menü güncellenir |
 | | `add(slot, builder)` | Yuvaya (`nav`, `header`, `main`, `statusbar`) UI ekler; bilinmeyen yuva sessizce yok sayılır |
 
 ```python
 def setup(ctx):
-    @ctx.role("layout").page("/notes", ctx.t("title"), icon="notes", permission="notes.edit")
+    @ctx.role("layout").page("/notes", lambda: ctx.t("title"), icon="notes", permission="notes.edit")
     def page():
         ctx.role("theme").page_header(ctx.t("title"), ctx.t("description"))
         ctx.role("theme").kpi(ctx.t("total"), len(ctx.storage.list()), tone="success")
@@ -95,7 +96,7 @@ def setup(ctx):
 - `locales/tr.toml` ve `locales/en.toml` zorunlu; düz anahtar-değer: `"kpi.total" = "Toplam: {count}"`.
 - Arayüzde sabit metin yok; her metin `ctx.t("kpi.total", count=5)` ile gelir. Anahtarlar plugin'e özeldir.
 - Geri düşme: seçili dil, sonra `en`, sonra anahtarın kendisi. Eksik çeviri uygulamayı bozmaz.
-- `ctx.t` o anki dili okur: sayfa fonksiyonunun içinde çağırın, `setup` içinde sabitlemeyin (yalnızca `layout.page` başlığı gibi kayıt anında gereken yerler hariç).
+- `ctx.t` o anki dili okur: sayfa fonksiyonunun içinde çağırın, `setup` içinde sabitlemeyin (menü başlığı gibi kayıt anında gereken yerlerde `lambda: ctx.t("title")` verin; layout her çizimde çağırır).
 - Noktalı anahtarlar tırnak içinde yazılmalı: `"kpi.total" = "..."`. Tırnaksız `kpi.total = ...` iç içe tabloya dönüşür ve anahtar bulunmaz.
 - Yeni dil için `locales/<dil>.toml` eklemek yeterlidir.
 

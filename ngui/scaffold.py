@@ -12,7 +12,7 @@ description = {{ tr = "{name} eklentisi", en = "The {name} plugin" }}
 core = ">=1,<2"
 ''',
     "__init__.py": '''def setup(ctx):
-    @ctx.role("layout").page("/{name}", ctx.t("title"), icon="extension")
+    @ctx.role("layout").page("/{name}", lambda: ctx.t("title"), icon="extension")
     def page():
         ctx.role("theme").page_header(ctx.t("title"), ctx.t("description"))
 ''',

@@ -58,3 +58,8 @@ def test_scaffold_git_failure_cleans_up(tmp_path, monkeypatch):
         new_plugin("notes", tmp_path)
     assert e.value.key == "err.git"
     assert not (tmp_path / "nicegui-plugin-notes").exists()
+
+
+def test_scaffold_title_is_lazy(tmp_path):
+    src = (new_plugin("notes", tmp_path) / "__init__.py").read_text()
+    assert 'lambda: ctx.t("title")' in src

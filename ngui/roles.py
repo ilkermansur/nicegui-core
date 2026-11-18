@@ -41,6 +41,10 @@ class ThemeRole(Protocol):
 
 class LayoutRole(Protocol):
     def page(
-        self, path: str, title: str, icon: str | None = None, permission: str | None = None
+        self,
+        path: str,
+        title: str | Callable[[], str],
+        icon: str | None = None,
+        permission: str | None = None,
     ) -> Callable: ...
     def add(self, slot: str, builder: Callable[[], None]) -> None: ...
