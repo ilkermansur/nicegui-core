@@ -81,6 +81,8 @@ class Manager:
 
     def add(self, name_or_url: str) -> str:
         pid, url = self.resolve(name_or_url)
+        if (self.home.repos_dir / CORE_KEY / pid).is_dir():
+            raise ManagerError("err.is_core", id=pid)
         dest = self.home.repos_dir / pid
         if dest.exists():
             raise ManagerError("err.already_installed", id=pid)

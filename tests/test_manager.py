@@ -57,6 +57,12 @@ def test_add_twice(mgr, hello_url):
     assert e.value.key == "err.already_installed"
 
 
+def test_add_refuses_core_plugin_id(mgr_with_core, tmp_path):
+    with pytest.raises(ManagerError) as e: mgr_with_core.add(str(tmp_path / "nicegui-plugin-layout-fake"))
+    assert e.value.key == "err.is_core"
+    assert not (mgr_with_core.home.repos_dir / "layout-fake").exists()
+
+
 def test_remove(mgr, hello_url):
     mgr.add(hello_url); mgr.remove("hello")
     assert not (mgr.home.repos_dir / "hello").exists() and "hello" not in mgr.home.load_config().enabled
