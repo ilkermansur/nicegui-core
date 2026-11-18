@@ -1,6 +1,6 @@
 # ngui
 
-NiceGUI uygulaması için küçük bir plugin yükleme çekirdeği. Docker içinde çalışır, durumunu `/data` volume'unda tutar ve yalnızca host'tan (`127.0.0.1:8080`) erişilebilir.
+NiceGUI uygulaması için küçük bir plugin yükleme çekirdeği. Docker içinde çalışır, durumunu `/data` volume'unda tutar ve yalnızca host'tan (`127.0.0.1:<NGUI_HOST_PORT>`, varsayılan 8080) erişilebilir.
 
 ## Kurulum
 
@@ -18,7 +18,7 @@ Core repo tanımlı değilse uygulama kurtarma sayfasını gösterir.
 
 1. `docker compose exec app ngui --help` ile komutlara bak.
 2. `ngui new <ad>` ile iskelet oluştur, `ngui link <ad> <yol>` ile yerel klasörü bağla, işin bitince `ngui unlink`.
-   Yayınlanmış plugin'leri `ngui update` ile güncelle; `ngui enable <ad>` ile etkinleştir.
+   Yayınlanmış plugin'leri `ngui update <ad>` ile güncelle (core plugin'ler için `ngui update core`); `ngui enable <ad>` ile etkinleştir.
 3. Değişiklik sonrası uygulama yeniden başlar; hata olursa kurtarma sayfasından bak.
 
 Plugin sözleşmesi (manifest, roller, bus): [CONTRACT.md](CONTRACT.md)

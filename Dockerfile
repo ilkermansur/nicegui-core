@@ -4,7 +4,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git \
 RUN pip install --no-cache-dir uv
 COPY . /opt/ngui
 RUN uv pip install --system /opt/ngui
-ENV NGUI_HOME=/data NGUI_HOST=0.0.0.0 NGUI_PORT=8080 PYTHONUNBUFFERED=1
+ENV NGUI_HOME=/data NGUI_HOST=0.0.0.0 NGUI_PORT=8080 PYTHONUNBUFFERED=1 \
+    NICEGUI_STORAGE_PATH=/data/.nicegui
 VOLUME /data
 EXPOSE 8080
 CMD ["ngui", "run"]
