@@ -111,3 +111,13 @@ def test_status_reports_problems(mgr_with_core):
     cfg = mgr_with_core.home.load_config(); cfg.enabled.append("ghost"); mgr_with_core.home.save_config(cfg)
     st = {s.id: s for s in mgr_with_core.status()}
     assert st["ghost"].problem == "not installed" and st["layout-fake"].role == "layout" and st["layout-fake"].source == "core"
+
+
+def test_status_and_sync_deps_honour_core_compat(mgr_with_core):
+    from conftest import link_hello_with_deps
+    calls = []; mgr_with_core.run_cmd = lambda cmd: calls.append(cmd)
+    link_hello_with_deps(mgr_with_core, ["tinyhelper==1.0"])
+    toml = mgr_with_core.home.root.parent / "hello-linked" / "plugin.toml"
+    toml.write_text(toml.read_text() + 'core = ">=2"\n')
+    assert {s.id: s for s in mgr_with_core.status()}["hello"].problem == "incompatible core: >=2"
+    assert mgr_with_core.sync_deps() is False and calls == []

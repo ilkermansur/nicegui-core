@@ -76,3 +76,33 @@ def test_unassigned_role_plugin_is_skipped(kernel, install_fixtures):
     kernel.config.roles["theme"] = "other"
     r = load(kernel)
     assert "theme-fake" not in r.loaded and "theme-fake" not in r.broken
+
+
+def _plugin(kernel, name, toml_extra="", body="pass"):
+    d = kernel.home.repos_dir / name
+    d.mkdir(parents=True)
+    (d / "plugin.toml").write_text(f'id = "{name}"\nversion = "1"\n{toml_extra}\n')
+    (d / "__init__.py").write_text(f"def setup(ctx):\n    {body}\n")
+
+
+def test_dependent_of_failed_setup_is_not_loaded(kernel):
+    _plugin(kernel, "needs-boom", 'requires = ["boom"]')
+    kernel.config.enabled = ["boom", "needs-boom"]
+    r = load(kernel)
+    assert "needs-boom" not in r.loaded and r.broken["needs-boom"] == "missing requirement: boom"
+
+
+def test_role_requiring_unloaded_plugin_fails_honestly(kernel):
+    p = kernel.home.repos_dir / "core-plugins" / "layout-fake" / "plugin.toml"
+    p.write_text(p.read_text() + '\nrequires = ["hello"]')
+    kernel.config.enabled = ["hello"]
+    r = load(kernel)
+    assert r.broken["layout-fake"] == "missing requirement: hello" and "layout-fake" not in r.loaded
+
+
+def test_broken_role_keeps_independent_feature(kernel):
+    (kernel.home.repos_dir / "core-plugins" / "theme-fake" / "__init__.py").write_text(
+        "def setup(ctx):\n    raise RuntimeError('theme')\n")
+    kernel.config.enabled = ["hello"]
+    r = load(kernel)
+    assert r.missing_roles == ["theme"] and "hello" in r.loaded

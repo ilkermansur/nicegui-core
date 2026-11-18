@@ -12,7 +12,7 @@ from typing import Any
 
 from ngui import gitops
 from ngui.config import CORE_KEY, Config, Home, LockEntry
-from ngui.loader import discover, plan
+from ngui.loader import discover, plan, read_manifests
 from ngui.manifest import ManifestError, core_compatible, load_manifest
 
 log = logging.getLogger("ngui.manager")
@@ -168,14 +168,8 @@ class Manager:
 
     def status(self) -> list[PluginStatus]:
         cfg, lock = self.home.load_config(), self.home.load_lock()
-        found, manifests, problems = discover(self.home, cfg), {}, {}
-        for pid, path in found.items():
-            try:
-                manifests[pid] = load_manifest(path, expected_id=pid)
-            except ManifestError as e:
-                problems[pid] = f"invalid manifest: {e}"
-        _, broken = plan(manifests, cfg)
-        problems = {**broken, **problems}
+        found, (manifests, bad) = discover(self.home, cfg), read_manifests(self.home, cfg)
+        problems = {**plan(manifests, cfg)[1], **bad}
         rows = []
         for pid in sorted(set(found) | set(cfg.enabled) | set(cfg.roles.values())):
             m = manifests.get(pid)
@@ -233,12 +227,8 @@ class Manager:
         return entry.previous
 
     def sync_deps(self) -> bool:
-        cfg, manifests = self.home.load_config(), {}
-        for pid, path in discover(self.home, cfg).items():
-            try:
-                manifests[pid] = load_manifest(path, expected_id=pid)
-            except ManifestError:
-                continue
+        cfg = self.home.load_config()
+        manifests = read_manifests(self.home, cfg)[0]
         order, _ = plan(manifests, cfg)
         specs = sorted({d for pid in order for d in manifests[pid].dependencies})
         marker = self.home.pydeps_dir / ".installed.json"

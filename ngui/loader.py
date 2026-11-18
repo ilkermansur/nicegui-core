@@ -29,6 +29,23 @@ def discover(home: Home, cfg: Config) -> dict[str, Path]:
     return found
 
 
+def read_manifests(home: Home, cfg: Config) -> tuple[dict[str, Manifest], dict[str, str]]:
+    """Discovered, readable and core-compatible manifests, plus a reason for each bad one."""
+    manifests: dict[str, Manifest] = {}
+    bad: dict[str, str] = {}
+    for pid, path in discover(home, cfg).items():
+        try:
+            m = load_manifest(path, expected_id=pid)
+        except ManifestError as e:
+            bad[pid] = f"invalid manifest: {e}"
+            continue
+        if core_compatible(m.core):
+            manifests[pid] = m
+        else:
+            bad[pid] = f"incompatible core: {m.core}"
+    return manifests, bad
+
+
 def plan(manifests: dict[str, Manifest], cfg: Config) -> tuple[list[str], dict[str, str]]:
     broken: dict[str, str] = {}
     wanted = set(cfg.enabled) | set(cfg.roles.values())
@@ -81,26 +98,12 @@ def _import(manifest: Manifest):
 
 def load(kernel: Kernel) -> LoadResult:
     cfg = kernel.config
-    manifests: dict[str, Manifest] = {}
-    bad: dict[str, str] = {}
-    for pid, path in discover(kernel.home, cfg).items():
-        try:
-            m = load_manifest(path, expected_id=pid)
-        except ManifestError as e:
-            bad[pid] = f"invalid manifest: {e}"
-            continue
-        if core_compatible(m.core):
-            manifests[pid] = m
-        else:
-            bad[pid] = f"incompatible core: {m.core}"
+    manifests, bad = read_manifests(kernel.home, cfg)
     order, broken = plan(manifests, cfg)
     result = LoadResult(broken={p: bad.get(p, why) for p, why in broken.items()})
-    for pid in bad:  # a bad plugin that is wanted but was reported as "not installed"
-        if pid in broken:
-            result.broken[pid] = bad[pid]
     for pid in order:
         m = manifests[pid]
-        failed = next((r for r in m.requires if r in result.broken), None)
+        failed = next((r for r in m.requires if r not in result.loaded), None)
         if failed:
             result.broken[pid] = f"missing requirement: {failed}"
             continue
