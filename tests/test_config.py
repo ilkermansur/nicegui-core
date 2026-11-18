@@ -29,3 +29,11 @@ def test_secret_is_stable_and_private(home):
 def test_home_from_env(monkeypatch, tmp_path):
     monkeypatch.setenv("NGUI_HOME", str(tmp_path))
     assert home_from_env().root == tmp_path
+
+
+def test_unknown_keys_are_ignored(home):
+    home.root.mkdir(parents=True)
+    home.config_path.write_text('default_lang = "en"\nfuture = 1\n')
+    home.lock_path.write_text('[ai]\nurl = "u"\ncommit = "c"\nfuture = 1\n')
+    assert home.load_config().default_lang == "en"
+    assert home.load_lock()["ai"] == LockEntry("u", "c")

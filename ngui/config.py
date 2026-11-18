@@ -1,7 +1,8 @@
 import os
 import secrets
+import tempfile
 import tomllib
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
 import tomli_w
@@ -29,6 +30,11 @@ class LockEntry:
     previous: str = ""
 
 
+def _known(cls, data: dict) -> dict:
+    names = {f.name for f in fields(cls)}
+    return {k: v for k, v in data.items() if k in names}
+
+
 class Home:
     def __init__(self, root: Path):
         self.root = Path(root)
@@ -44,17 +50,23 @@ class Home:
         return tomllib.loads(path.read_text()) if path.exists() else {}
 
     def _write(self, path: Path, data: dict) -> None:
+        self._atomic_write(path, tomli_w.dumps(data))
+
+    def _atomic_write(self, path: Path, text: str) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
-        path.write_text(tomli_w.dumps(data))
+        fd, tmp = tempfile.mkstemp(dir=self.root)  # mkstemp creates mode 0o600
+        with os.fdopen(fd, "w") as f:
+            f.write(text)
+        os.replace(tmp, path)
 
     def load_config(self) -> Config:
-        return Config(**self._read(self.config_path))
+        return Config(**_known(Config, self._read(self.config_path)))
 
     def save_config(self, cfg: Config) -> None:
         self._write(self.config_path, asdict(cfg))
 
     def load_lock(self) -> dict[str, LockEntry]:
-        return {k: LockEntry(**v) for k, v in self._read(self.lock_path).items()}
+        return {k: LockEntry(**_known(LockEntry, v)) for k, v in self._read(self.lock_path).items()}
 
     def save_lock(self, lock: dict[str, LockEntry]) -> None:
         self._write(self.lock_path, {k: asdict(v) for k, v in lock.items()})
@@ -62,9 +74,15 @@ class Home:
     def secret(self) -> str:
         if not self.secret_path.exists():
             self.root.mkdir(parents=True, exist_ok=True)
-            fd = os.open(self.secret_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            fd, tmp = tempfile.mkstemp(dir=self.root)
             with os.fdopen(fd, "w") as f:
                 f.write(secrets.token_hex(32))
+            try:
+                os.link(tmp, self.secret_path)  # fails if another process won the race
+            except FileExistsError:
+                pass
+            finally:
+                os.unlink(tmp)
         return self.secret_path.read_text()
 
 
