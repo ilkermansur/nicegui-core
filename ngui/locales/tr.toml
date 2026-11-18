@@ -18,3 +18,5 @@
 "err.deps" = "Bağımlılıklar kurulamadı: {detail}"
 "err.self_update_docker" = "Docker'da kendini güncelleme yok; yeni imaj çekin."
 "err.manifest" = "Geçersiz eklenti manifesti: {detail}"
+"cli.created" = "Eklenti iskeleti oluşturuldu: {path}"
+"err.exists" = "Zaten var: {path}"

@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from pathlib import Path
 
 from ngui import KERNEL_DIR
 from ngui.app import run, signal_app
@@ -8,6 +9,7 @@ from ngui.config import home_from_env
 from ngui.i18n import I18n
 from ngui.manager import Manager, ManagerError
 from ngui.manifest import ManifestError
+from ngui.scaffold import new_plugin
 
 # command -> (positional args, runs sync_deps on success)
 COMMANDS = {"add": (["name_or_url"], True), "remove": (["id"], False), "update": (["id"], True),
@@ -27,7 +29,7 @@ def _parser() -> argparse.ArgumentParser:
             sp.add_argument(a)
     new = sub.add_parser("new")
     new.add_argument("name")
-    new.add_argument("--dir", default=".")
+    new.add_argument("--dir", default=None)
     return p
 
 
@@ -55,7 +57,8 @@ def main(argv: list[str] | None = None) -> int:
                 print("\t".join([s.id, s.source, "✓" if s.enabled else "–", s.role, s.commit[:7], s.problem]))
             return 0
         if a.cmd == "new":
-            raise NotImplementedError("wired in Task 12")
+            print(t("cli.created", path=new_plugin(a.name, Path(a.dir or Path.cwd()))))
+            return 0
         if a.cmd == "self-update":
             print(t("cli.self_updated", commit=mgr.self_update(KERNEL_DIR)[:7]))
         else:
@@ -65,6 +68,9 @@ def main(argv: list[str] | None = None) -> int:
             print(t("cli.done", cmd=a.cmd))
     except ManagerError as e:
         print(t(e.key, **e.vars), file=sys.stderr)
+        return 1
+    except FileExistsError as e:
+        print(t("err.exists", path=e.args[0]), file=sys.stderr)
         return 1
     except ManifestError as e:
         print(t("err.manifest", detail=str(e)), file=sys.stderr)

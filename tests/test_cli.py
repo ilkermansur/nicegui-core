@@ -1,8 +1,6 @@
 import re
 import tomllib
 
-import pytest
-
 from ngui import KERNEL_DIR
 from ngui.cli import main
 
@@ -52,9 +50,14 @@ def test_run_calls_app_run(monkeypatch):
     assert main(["run"]) == 0 and called == [1]
 
 
-def test_new_is_registered():
-    with pytest.raises(NotImplementedError):
-        main(["new", "x"])
+def test_new_creates_scaffold(home_env, tmp_path, capsys, monkeypatch):
+    monkeypatch.setenv("NGUI_LANG", "en")
+    assert main(["new", "x", "--dir", str(tmp_path)]) == 0
+    assert (tmp_path / "nicegui-plugin-x" / "plugin.toml").is_file()
+    assert "scaffold created" in capsys.readouterr().out
+    assert main(["new", "x", "--dir", str(tmp_path)]) == 1
+    assert "Already exists" in capsys.readouterr().err
+    assert main(["new", "Bad Name", "--dir", str(tmp_path)]) == 1
 
 
 def test_every_err_key_has_tr_and_en():

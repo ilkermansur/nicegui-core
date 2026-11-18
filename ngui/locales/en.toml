@@ -18,3 +18,5 @@
 "err.deps" = "Installing dependencies failed: {detail}"
 "err.self_update_docker" = "Self-update is not available in Docker; pull a new image instead."
 "err.manifest" = "Invalid plugin manifest: {detail}"
+"cli.created" = "Plugin scaffold created: {path}"
+"err.exists" = "Already exists: {path}"
