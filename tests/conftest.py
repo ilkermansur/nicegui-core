@@ -1,3 +1,4 @@
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -100,3 +101,11 @@ def mgr_with_core(mgr, core_url, monkeypatch):
     mgr.bootstrap()
     fake_roles(mgr.home)
     return mgr
+
+
+def link_hello_with_deps(mgr, deps: list[str]) -> None:
+    dest = mgr.home.root.parent / "hello-linked"
+    shutil.copytree(FIXTURES / "plugins" / "hello", dest)
+    with (dest / "plugin.toml").open("a") as f:
+        f.write(f"\ndependencies = {json.dumps(deps)}\n")
+    mgr.link("hello", str(dest))

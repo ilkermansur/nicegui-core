@@ -1,13 +1,19 @@
+import json
 import logging
 import os
 import shutil
+import subprocess
+import sys
+import urllib.request
 from dataclasses import dataclass
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from ngui import gitops
 from ngui.config import CORE_KEY, Config, Home, LockEntry
 from ngui.loader import discover, plan
-from ngui.manifest import ManifestError, load_manifest
+from ngui.manifest import ManifestError, core_compatible, load_manifest
 
 log = logging.getLogger("ngui.manager")
 
@@ -28,6 +34,25 @@ class PluginStatus:
     problem: str
 
 
+@dataclass
+class CatalogEntry:
+    id: str
+    description: str
+    url: str
+
+
+def fetch_json(url: str) -> Any:
+    req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+    if token := os.environ.get("GITHUB_TOKEN"):
+        req.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.load(resp)
+
+
+def _run(cmd: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+
 def _clone(url: str, dest: Path) -> str:
     try:
         return gitops.clone(url, dest)
@@ -38,6 +63,7 @@ def _clone(url: str, dest: Path) -> str:
 class Manager:
     def __init__(self, home: Home):
         self.home = home
+        self.run_cmd: Callable[[list[str]], subprocess.CompletedProcess] = _run
 
     def bootstrap(self) -> None:
         if not self.home.config_path.exists():
@@ -159,3 +185,97 @@ class Manager:
             rows.append(PluginStatus(pid, source, pid in cfg.enabled or bool(role), role,
                                      lock[pid].commit if pid in lock else "", problems.get(pid, "")))
         return rows
+
+    def _repo_key(self, pid: str) -> str:
+        return CORE_KEY if pid == "core" else pid
+
+    def update(self, pid: str) -> str:
+        key = self._repo_key(pid)
+        dest, lock = self.home.repos_dir / key, self.home.load_lock()
+        if key not in lock or not dest.is_dir():
+            raise ManagerError("err.not_installed", id=pid)
+        old = lock[key].commit
+        try:
+            new = gitops.pull(dest)
+        except gitops.GitError as e:
+            raise ManagerError("err.git", detail=str(e)) from e
+        if new == old:
+            return new
+        for toml in [dest / "plugin.toml", *dest.glob("*/plugin.toml")]:
+            if not toml.is_file():
+                continue
+            try:
+                m = load_manifest(toml.parent)
+            except ManifestError:
+                gitops.checkout(dest, old)
+                raise
+            if not core_compatible(m.core):
+                gitops.checkout(dest, old)
+                raise ManagerError("err.needs_self_update", plugin=m.id, spec=m.core)
+        lock[key] = LockEntry(lock[key].url, new, previous=old)
+        self.home.save_lock(lock)
+        return new
+
+    def rollback(self, pid: str) -> str:
+        key = self._repo_key(pid)
+        lock = self.home.load_lock()
+        if key not in lock:
+            raise ManagerError("err.not_installed", id=pid)
+        entry = lock[key]
+        if not entry.previous:
+            raise ManagerError("err.no_previous")
+        try:
+            gitops.checkout(self.home.repos_dir / key, entry.previous)
+        except gitops.GitError as e:
+            raise ManagerError("err.git", detail=str(e)) from e
+        lock[key] = LockEntry(entry.url, entry.previous, entry.commit)
+        self.home.save_lock(lock)
+        return entry.previous
+
+    def sync_deps(self) -> bool:
+        cfg, manifests = self.home.load_config(), {}
+        for pid, path in discover(self.home, cfg).items():
+            try:
+                manifests[pid] = load_manifest(path, expected_id=pid)
+            except ManifestError:
+                continue
+        order, _ = plan(manifests, cfg)
+        specs = sorted({d for pid in order for d in manifests[pid].dependencies})
+        marker = self.home.pydeps_dir / ".installed.json"
+        try:
+            if json.loads(marker.read_text()) == specs:
+                return False
+        except (OSError, ValueError):
+            pass
+        if not specs:
+            return False
+        self.home.pydeps_dir.mkdir(parents=True, exist_ok=True)
+        base = ["uv", "pip"] if shutil.which("uv") else [sys.executable, "-m", "pip"]
+        r = self.run_cmd([*base, "install", "--target", str(self.home.pydeps_dir), *specs])
+        if r.returncode:
+            raise ManagerError("err.deps", detail=r.stderr)
+        marker.write_text(json.dumps(specs))
+        return True
+
+    def self_update(self, kernel_dir: Path) -> str:
+        if not (Path(kernel_dir) / ".git").exists():
+            raise ManagerError("err.self_update_docker")
+        try:
+            return gitops.pull(Path(kernel_dir))
+        except gitops.GitError as e:
+            raise ManagerError("err.git", detail=str(e)) from e
+
+    def catalog(self) -> list[CatalogEntry]:
+        entries = []
+        for source in self.home.load_config().sources:
+            host, _, owner = source.partition("/")
+            if host != "github.com" or not owner:
+                continue
+            try:
+                repos = fetch_json(f"https://api.github.com/users/{owner}/repos?per_page=100")
+                entries += [CatalogEntry(r["name"].removeprefix("nicegui-plugin-"),
+                                         r.get("description") or "", r["html_url"])
+                            for r in repos if r["name"].startswith("nicegui-plugin-")]
+            except (OSError, ValueError, KeyError, TypeError) as e:
+                log.warning("catalog fetch failed for %s: %s", source, e)
+        return entries
