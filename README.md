@@ -14,6 +14,24 @@ docker compose exec app ngui list
 
 Core repo tanımlı değilse uygulama kurtarma sayfasını gösterir.
 
+## Yedekleme
+
+Bütün durum (`config.toml`, `plugins.lock`, plugin repoları ve verileri, oturum anahtarı) `/data` volume'undadır. `GITHUB_TOKEN` orada değildir.
+
+```sh
+docker compose exec -T app tar czf - -C /data . > ngui-yedek-$(date +%F).tgz
+```
+
+Geri yükleme (mevcut `/data` içeriğinin yerini alır):
+
+```sh
+docker compose stop app
+docker compose run --rm -T app sh -c 'find /data -mindepth 1 -delete && tar xzf - -C /data' < ngui-yedek-TARIH.tgz
+docker compose up -d
+```
+
+Yedek dosyası oturum anahtarını içerir: paylaşma.
+
 ## Plugin geliştirme döngüsü
 
 1. `docker compose exec app ngui --help` ile komutlara bak.
