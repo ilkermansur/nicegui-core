@@ -1,8 +1,9 @@
 import shutil
 
 import pytest
-from conftest import FIXTURES
+from conftest import FIXTURES, commit_change
 
+from ngui import gitops
 from ngui.manager import ManagerError
 
 
@@ -69,7 +70,8 @@ def test_remove(mgr, hello_url):
     assert "hello" not in mgr.home.load_lock()
 
 
-@pytest.mark.parametrize("pid,key", [("layout-fake", "err.is_core"), ("core", "err.is_core"), ("ghost", "err.not_installed")])
+@pytest.mark.parametrize("pid,key", [("layout-fake", "err.is_core"), ("core", "err.is_core"), ("core-plugins", "err.is_core"),
+                                     ("ghost", "err.not_installed")])
 def test_remove_refusals(mgr_with_core, pid, key):
     with pytest.raises(ManagerError) as e: mgr_with_core.remove(pid)
     assert e.value.key == key
@@ -141,3 +143,27 @@ def test_bootstrap_reclones_half_cloned_core(mgr, core_url, monkeypatch):
     monkeypatch.setenv("NGUI_CORE_REPO", core_url); mgr.bootstrap()
     assert (mgr.home.repos_dir / "core-plugins" / "layout-fake").is_dir()
     assert not (mgr.home.repos_dir / "core-plugins" / "junk").exists()
+
+
+def test_remove_core_plugins_keeps_core_repo(mgr_with_core):
+    with pytest.raises(ManagerError): mgr_with_core.remove("core-plugins")
+    assert (mgr_with_core.home.repos_dir / "core-plugins" / "layout-fake").is_dir()
+
+
+def test_bootstrap_reclone_returns_to_locked_commit(mgr, core_url, monkeypatch):
+    monkeypatch.setenv("NGUI_CORE_REPO", core_url); mgr.bootstrap()
+    pinned = mgr.home.load_lock()["core-plugins"].commit
+    commit_change(core_url)  # upstream moves on
+    (mgr.home.repos_dir / "core-plugins" / ".git" / "HEAD").unlink()  # half-broken clone
+    mgr.bootstrap()
+    assert gitops.head(mgr.home.repos_dir / "core-plugins") == pinned
+    assert mgr.home.load_lock()["core-plugins"].commit == pinned
+
+
+def test_bootstrap_reclone_with_vanished_commit_takes_head(mgr, core_url, monkeypatch):
+    monkeypatch.setenv("NGUI_CORE_REPO", core_url); mgr.bootstrap()
+    lock = mgr.home.load_lock(); lock["core-plugins"].commit = "0" * 40; mgr.home.save_lock(lock)
+    shutil.rmtree(mgr.home.repos_dir / "core-plugins")
+    mgr.bootstrap()
+    head = gitops.head(mgr.home.repos_dir / "core-plugins")
+    assert mgr.home.load_lock()["core-plugins"].commit == head

@@ -106,3 +106,18 @@ def test_broken_role_keeps_independent_feature(kernel):
     kernel.config.enabled = ["hello"]
     r = load(kernel)
     assert r.missing_roles == ["theme"] and "hello" in r.loaded
+
+
+def test_plugin_calling_sys_exit_is_isolated(kernel):
+    _plugin(kernel, "quitter", body="import sys; sys.exit(3)")
+    kernel.config.enabled = ["quitter", "hello"]
+    r = load(kernel)
+    assert "hello" in r.loaded and r.broken["quitter"].startswith("setup failed: SystemExit")
+
+
+def test_plugin_exiting_at_import_is_isolated(kernel):
+    _plugin(kernel, "quitter2")
+    (kernel.home.repos_dir / "quitter2" / "__init__.py").write_text("raise SystemExit(1)\n")
+    kernel.config.enabled = ["quitter2", "hello"]
+    r = load(kernel)
+    assert "hello" in r.loaded and r.broken["quitter2"].startswith("setup failed: SystemExit")

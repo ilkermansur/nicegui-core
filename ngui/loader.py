@@ -110,7 +110,7 @@ def load(kernel: Kernel) -> LoadResult:
             module = _import(m)
             kernel.i18n.load(pid, m.path / "locales")
             value = module.setup(Context(m, kernel))
-        except Exception as e:
+        except (Exception, SystemExit) as e:  # a plugin must never take the app down; Ctrl+C still does
             result.broken[pid] = f"setup failed: {type(e).__name__}: {e}"
             continue
         if m.provides:

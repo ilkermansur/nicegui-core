@@ -82,3 +82,11 @@ def test_broken_config_is_reported(home_env, capsys, monkeypatch):
     assert main(["list"]) == 1
     err = capsys.readouterr().err
     assert "Invalid config file" in err and str(home_env.config_path) in err
+
+
+def test_run_with_broken_config_prints_message_not_traceback(home_env, capsys, monkeypatch):
+    monkeypatch.setenv("NGUI_LANG", "en")
+    home_env.config_path.write_text("enabled = [")
+    monkeypatch.setattr("ngui.cli.run", lambda: home_env.load_config())
+    assert main(["run"]) == 1
+    assert "Invalid config file" in capsys.readouterr().err

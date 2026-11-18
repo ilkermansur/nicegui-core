@@ -34,9 +34,6 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     a = _parser().parse_args(argv)
-    if a.cmd == "run":
-        run()
-        return 0
     home = home_from_env()
     i18n = I18n()
     i18n.load("core", LOCALES_DIR)
@@ -48,6 +45,9 @@ def main(argv: list[str] | None = None) -> int:
     mgr = Manager(home)
     try:
         i18n.default_lang = home.load_config().default_lang
+        if a.cmd == "run":
+            run()
+            return 0
         if a.cmd == "list":
             for s in mgr.status():
                 print("\t".join([s.id, s.source, "✓" if s.enabled else "–", s.role, s.commit[:7], s.problem]))

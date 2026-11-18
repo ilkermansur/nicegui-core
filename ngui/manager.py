@@ -66,7 +66,14 @@ class Manager:
                 log.error("core plugins clone failed: %s", e)
                 return
             lock = self.home.load_lock()
-            lock[CORE_KEY] = LockEntry(cfg.core_repo, commit)
+            pinned = lock.get(CORE_KEY)
+            if pinned and pinned.url == cfg.core_repo and pinned.commit != commit:
+                try:  # a re-clone goes back to the locked commit, not upstream HEAD
+                    gitops.checkout(dest, pinned.commit)
+                    return
+                except gitops.GitError as e:
+                    log.warning("locked core commit %s is gone, using HEAD: %s", pinned.commit[:7], e)
+            lock[CORE_KEY] = LockEntry(cfg.core_repo, commit, pinned.previous if pinned else "")
             self.home.save_lock(lock)
 
     def resolve(self, name_or_url: str) -> tuple[str, str]:
@@ -108,14 +115,14 @@ class Manager:
         """Lock key, clone dir and lock of an installed repo; `core` is the core-plugins repo."""
         if (self.home.repos_dir / CORE_KEY / pid).is_dir():
             raise ManagerError("err.is_core", id=pid)
-        key, lock = CORE_KEY if pid == "core" else pid, self.home.load_lock()
+        key, lock = CORE_KEY if pid in ("core", CORE_KEY) else pid, self.home.load_lock()
         if key not in lock or not (self.home.repos_dir / key).is_dir():
             raise ManagerError("err.not_installed", id=pid)
         return key, self.home.repos_dir / key, lock
 
     def remove(self, pid: str) -> None:
         cfg = self.home.load_config()
-        if pid == "core":
+        if pid in ("core", CORE_KEY):
             raise ManagerError("err.is_core", id=pid)
         _, dest, lock = self._repo(pid)
         if pid in cfg.roles.values():
