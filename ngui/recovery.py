@@ -5,7 +5,7 @@ from ngui.context import Kernel
 
 def mount(kernel: Kernel) -> None:
     def t(key: str, **vars) -> str:
-        return kernel.i18n.t("core", key, **vars)
+        return kernel.i18n.t("core", key, lang=kernel.i18n.default_lang, **vars)  # no storage
 
     @ui.page("/{_path:path}")
     def page(_path: str = "") -> None:

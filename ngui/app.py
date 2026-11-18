@@ -18,6 +18,9 @@ log = logging.getLogger("ngui.app")
 
 
 def restart() -> NoReturn:
+    # Keep SIGHUP blocked across exec (the mask survives execv) so a SIGHUP that arrives
+    # while the new image boots stays pending instead of killing it (or being ignored as PID 1).
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGHUP})
     os.execv(sys.executable, [sys.executable, "-m", "ngui", "run"])
 
 
@@ -40,6 +43,8 @@ def _remove_pid(home: Home, pid: int) -> None:
 def run(home: Home | None = None) -> None:
     from nicegui import ui
 
+    signal.signal(signal.SIGHUP, lambda *_: restart())
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGHUP})  # a queued SIGHUP restarts once more
     home = home or home_from_env()
     mgr = Manager(home)
     mgr.bootstrap()
@@ -61,7 +66,6 @@ def run(home: Home | None = None) -> None:
         recovery.mount(kernel)
     home.pid_path.write_text(str(os.getpid()))
     atexit.register(_remove_pid, home, os.getpid())
-    signal.signal(signal.SIGHUP, lambda *_: restart())
     ui.run(host=os.environ.get("NGUI_HOST") or "127.0.0.1",
            port=int(os.environ.get("NGUI_PORT") or 8080),
            reload=False, show=False, title="ngui", storage_secret=home.secret())
