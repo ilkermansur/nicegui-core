@@ -29,3 +29,14 @@ def test_t_uses_plugin_namespace(home, tmp_path):
     k = make_kernel(home); d = tmp_path / "loc"; d.mkdir()
     (d / "tr.toml").write_text('"k" = "v"'); k.i18n.load("ai", d)
     assert Context(Manifest("ai", {}, "1", {}, "", "", [], [], [], tmp_path), k).t("k") == "v"
+
+
+def test_data_dir_is_per_plugin_and_created(home, tmp_path):
+    k = make_kernel(home)
+    d = Context(Manifest("ai", {}, "1", {}, "", "", [], [], [], tmp_path), k).data_dir
+    assert d == home.data_dir / "plugins" / "ai" and d.is_dir()
+
+
+def test_contract_is_1_1():
+    from ngui.manifest import core_compatible
+    assert core_compatible(">=1.1,<2") and core_compatible(">=1,<2")

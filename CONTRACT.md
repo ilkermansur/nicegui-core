@@ -1,6 +1,8 @@
-# ngui Plugin Sözleşmesi (sürüm 1.0)
+# ngui Plugin Sözleşmesi (sürüm 1.1)
 
 Bu belge plugin yazarının okuması gereken tek belgedir. İskelet için: `ngui new <ad>`.
+
+**Sürüm kuralı:** 1.x içinde sözleşme yalnızca büyür: yeni alanlar eklenir, var olanlar değişmez ya da kalkmaz. `core = ">=1,<2"` yazan bir plugin her 1.x çekirdekte çalışır. Kıran bir değişiklik ancak 2.0 ile gelir.
 
 ## 1. Klasör yapısı ve `plugin.toml`
 
@@ -34,6 +36,7 @@ Bozuk `plugin.toml`, hata veren `setup` ya da eksik `requires` yalnızca o plugi
 | `ctx.id`, `ctx.manifest`, `ctx.path` | Kimlik, okunmuş manifest, plugin klasörü (`Path`) |
 | `ctx.log` | `logging.Logger` (`ngui.<id>`) |
 | `ctx.role(name)` | Rol nesnesi; yüklü değilse `LookupError`. Yalnızca önceden yüklenen roller görülür |
+| `ctx.data_dir` | Plugin'e ait dosya klasörü (`Path`, `/data/data/plugins/<id>`): SQLite dosyası, yüklenen dosyalar. Plugin kaldırılınca silinmez. 1.1 ile geldi; kullanan plugin `core = ">=1.1,<2"` yazar |
 | `ctx.storage` | Kısayol: `ctx.role("storage").for_plugin(ctx.id)` |
 | `ctx.bus` | Olay yolu (bkz. 4) |
 | `ctx.services` | Servis kaydı (bkz. 4) |

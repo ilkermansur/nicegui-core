@@ -1,6 +1,6 @@
 from pathlib import Path
 
-CONTRACT_VERSION = "1.0"
+CONTRACT_VERSION = "1.1"  # 1.x only ever grows backward-compatibly
 KERNEL_DIR = Path(__file__).resolve().parent.parent
 LOCALES_DIR = KERNEL_DIR / "ngui" / "locales"  # the kernel's own "core" texts
 

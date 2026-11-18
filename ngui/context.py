@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -38,6 +39,13 @@ class Context:
             return self.kernel.roles[name]
         except KeyError:
             raise LookupError(f"role '{name}' is not loaded") from None
+
+    @property
+    def data_dir(self) -> Path:
+        """The plugin's own folder for files (databases, uploads); kept when the plugin is removed."""
+        d = self.kernel.home.data_dir / "plugins" / self.id
+        d.mkdir(parents=True, exist_ok=True)
+        return d
 
     @property
     def storage(self):
