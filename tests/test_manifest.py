@@ -20,7 +20,9 @@ def test_bilingual_name(tmp_path):
     assert localized(m.name, "tr") == "AI Sohbet" and localized(m.name, "de") == "AI Chat"
 
 
-@pytest.mark.parametrize("text", ['id = ', 'version = "1"', 'id = "Bad_Id"\nversion="1"', 'id="core"\nversion="1"'])
+@pytest.mark.parametrize("text", ['id = ', 'version = "1"', 'id = "Bad_Id"\nversion="1"', 'id="core"\nversion="1"',
+                                  'id="core-plugins"\nversion="1"', 'id="ai\\n"\nversion="1"',
+                                  'id="x"\nversion="1"\nprovides=5'])
 def test_invalid_manifests(tmp_path, text):
     with pytest.raises(ManifestError):
         load_manifest(write(tmp_path, text))
@@ -45,3 +47,11 @@ def test_provides_must_be_known_role(tmp_path):
 @pytest.mark.parametrize("spec,ok", [(">=1,<2", True), (">=2", False), ("", True)])
 def test_core_compatible(spec, ok):
     assert core_compatible(spec, "1.0") is ok
+
+
+def test_undecodable_file(tmp_path):
+    d = tmp_path / "ai"
+    d.mkdir()
+    (d / "plugin.toml").write_bytes(b"\xff\xfe\x00bad")
+    with pytest.raises(ManifestError):
+        load_manifest(d)

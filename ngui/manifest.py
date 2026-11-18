@@ -8,8 +8,8 @@ from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from ngui import CONTRACT_VERSION
 from ngui.roles import ROLE_ORDER
 
-ID_PATTERN = re.compile(r"^[a-z][a-z0-9-]*$")
-RESERVED_IDS = {"core"}
+ID_PATTERN = re.compile(r"[a-z][a-z0-9-]*")
+RESERVED_IDS = {"core", "core-plugins"}
 
 
 class ManifestError(Exception):
@@ -50,18 +50,20 @@ def load_manifest(path: Path, expected_id: str | None = None) -> Manifest:
     file = Path(path) / "plugin.toml"
     try:
         data = tomllib.loads(file.read_text(encoding="utf-8"))
-    except OSError as e:
+    except (OSError, UnicodeDecodeError) as e:
         raise ManifestError(f"cannot read {file}: {e}") from e
     except tomllib.TOMLDecodeError as e:
         raise ManifestError(f"invalid TOML in {file}: {e}") from e
     plugin_id, version = data.get("id"), data.get("version")
     if not isinstance(plugin_id, str) or not isinstance(version, str) or not version:
         raise ManifestError(f"{file}: 'id' and 'version' are required strings")
-    if not ID_PATTERN.match(plugin_id) or plugin_id in RESERVED_IDS:
+    if not ID_PATTERN.fullmatch(plugin_id) or plugin_id in RESERVED_IDS:
         raise ManifestError(f"{file}: invalid or reserved id '{plugin_id}'")
     if expected_id is not None and plugin_id != expected_id:
         raise ManifestError(f"{file}: id '{plugin_id}' does not match '{expected_id}'")
     provides = data.get("provides", "")
+    if not isinstance(provides, str):
+        raise ManifestError(f"{file}: 'provides' must be a string")
     if provides and provides not in ROLE_ORDER:
         raise ManifestError(f"{file}: unknown role '{provides}'")
     core = data.get("core", ">=1,<2")
